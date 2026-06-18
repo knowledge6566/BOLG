@@ -1,0 +1,15 @@
+node_modules/
+.venv/
+data/
+.env
+.env.local
+.env.production
+*.csv
+__pycache__/
+*.py[cod]
+*.pyo
+.DS_Store
+*.sqlite3
+*.db
+*.key
+*.pem
