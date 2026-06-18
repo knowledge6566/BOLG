@@ -1,0 +1,27 @@
+{
+  "name": "bolgerr",
+  "version": "1.0.0",
+  "description": "A full-stack blogger website with 3D effects, multi-page navigation, and a REST API backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "npx nodemon server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^4.22.2",
+    "nodemailer": "^8.0.11"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "blog",
+    "express",
+    "nodejs",
+    "3d",
+    "fullstack"
+  ],
+  "author": "Bolgerr",
+  "license": "MIT"
+}

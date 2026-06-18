@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bolgerr — Where Ideas Come Alive</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+/* ===================== DESIGN TOKENS ===================== */
+:root {
+  --ink:     #0D0D0F;
+  --paper:   #F8F6F1;
+  --accent:  #5B4FE9;
+  --accent2: #E94F6A;
+  --muted:   #6B7280;
+  --border:  #E5E2DB;
+  --card:    #FFFFFF;
+  --glow:    rgba(91,79,233,0.18);
+
+  --ff-display: 'Syne', sans-serif;
+  --ff-body:    'Inter', sans-serif;
+  --ff-serif:   'Playfair Display', serif;
+
+  --r: 12px;
+  --shadow: 0 8px 32px rgba(13,13,15,0.10);
+  --shadow-lg: 0 24px 64px rgba(13,13,15,0.16);
+}
+
+/* ===================== RESET ===================== */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:16px}
+body{font-family:var(--ff-body);background:var(--paper);color:var(--ink);overflow-x:hidden;line-height:1.6}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;background:none;font:inherit}
+ul{list-style:none}
+
+/* ===================== CANVAS 3D BG ===================== */
+#canvas3d{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.55}
+
+/* ===================== NAVBAR ===================== */
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;
+     padding:0 clamp(1rem,4vw,3rem);height:64px;
+     background:rgba(248,246,241,0.82);backdrop-filter:blur(18px);
+     border-bottom:1px solid var(--border);transition:box-shadow .3s}
+.nav.scrolled{box-shadow:0 4px 20px rgba(13,13,15,0.08)}
+.nav-logo{font-family:var(--ff-display);font-size:1.5rem;font-weight:800;letter-spacing:-0.03em;
+          background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.nav-links{display:flex;gap:2rem;align-items:center}
+.nav-links a{font-family:var(--ff-display);font-size:.875rem;font-weight:600;color:var(--muted);transition:color .2s;letter-spacing:.02em}
+.nav-links a:hover,.nav-links a.active{color:var(--ink)}
+.nav-cta{padding:.5rem 1.25rem;background:var(--accent);color:#fff!important;border-radius:40px;font-size:.875rem!important;font-weight:600!important;transition:transform .2s,box-shadow .2s!important}
+.nav-cta:hover{transform:translateY(-1px);box-shadow:0 6px 20px var(--glow)}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer}
+.hamburger span{width:24px;height:2px;background:var(--ink);border-radius:2px;transition:all .3s}
+.mobile-menu{display:none;position:fixed;top:64px;left:0;right:0;background:var(--paper);border-bottom:1px solid var(--border);
+             flex-direction:column;gap:0;z-index:999;padding:.5rem 0}
+.mobile-menu a{display:block;padding:1rem clamp(1rem,4vw,3rem);font-family:var(--ff-display);font-weight:600;color:var(--muted);border-bottom:1px solid var(--border)}
+.mobile-menu a:last-child{border-bottom:none}
+.mobile-menu.open{display:flex}
+
+/* ===================== PAGE SYSTEM ===================== */
+.page{display:none;min-height:100vh;padding-top:64px;position:relative;z-index:1}
+.page.active{display:block}
+
+/* ===================== HERO ===================== */
+.hero{min-height:calc(100vh - 64px);display:flex;flex-direction:column;align-items:center;justify-content:center;
+      text-align:center;padding:4rem clamp(1rem,5vw,4rem);position:relative}
+.hero-eyebrow{font-family:var(--ff-display);font-size:.8rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+              color:var(--accent);margin-bottom:1.5rem;opacity:0;animation:fadeUp .6s .2s forwards}
+.hero-title{font-family:var(--ff-display);font-size:clamp(3rem,9vw,7.5rem);font-weight:800;line-height:.95;
+            letter-spacing:-0.04em;margin-bottom:1.5rem;opacity:0;animation:fadeUp .6s .4s forwards}
+.hero-title span{display:block}
+.hero-title .italic{font-family:var(--ff-serif);font-style:italic;font-size:clamp(2.5rem,7vw,6rem);font-weight:400;
+                    color:var(--accent);letter-spacing:-0.02em}
+.hero-sub{font-size:clamp(1rem,2vw,1.2rem);color:var(--muted);max-width:540px;margin:0 auto 2.5rem;
+          opacity:0;animation:fadeUp .6s .6s forwards}
+.hero-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;opacity:0;animation:fadeUp .6s .8s forwards}
+.btn-primary{padding:.85rem 2rem;background:var(--accent);color:#fff;border-radius:40px;font-family:var(--ff-display);
+             font-weight:700;font-size:.9rem;letter-spacing:.02em;transition:transform .2s,box-shadow .2s}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 30px var(--glow)}
+.btn-outline{padding:.85rem 2rem;border:2px solid var(--border);border-radius:40px;font-family:var(--ff-display);
+             font-weight:700;font-size:.9rem;letter-spacing:.02em;color:var(--ink);transition:all .2s}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.hero-scroll{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;
+             align-items:center;gap:.5rem;opacity:0;animation:fadeUp .6s 1.2s forwards}
+.hero-scroll span{font-size:.7rem;font-family:var(--ff-display);font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.scroll-line{width:1px;height:40px;background:linear-gradient(to bottom,var(--accent),transparent);animation:scrollPulse 1.5s infinite}
+
+/* ===================== FEATURED BLOGS ===================== */
+.section{padding:clamp(3rem,8vw,6rem) clamp(1rem,5vw,4rem)}
+.section-label{font-family:var(--ff-display);font-size:.75rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+               color:var(--accent);margin-bottom:1rem}
+.section-title{font-family:var(--ff-display);font-size:clamp(1.8rem,4vw,3rem);font-weight:800;letter-spacing:-0.03em;
+               margin-bottom:.5rem;line-height:1.1}
+.section-sub{color:var(--muted);max-width:500px;margin-bottom:3rem}
+.posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.5rem}
+.post-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;
+           transition:transform .3s,box-shadow .3s;cursor:pointer;position:relative}
+.post-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-lg)}
+.post-card-img{height:200px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;
+               justify-content:center;font-size:3rem;position:relative;overflow:hidden}
+.post-card-img::after{content:'';position:absolute;inset:0;background:inherit;opacity:.4;
+                       transform:scale(1.1);filter:blur(20px);z-index:0}
+.post-card-img span{z-index:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.3))}
+.post-card-body{padding:1.5rem}
+.post-tag{display:inline-block;padding:.25rem .75rem;border-radius:40px;background:rgba(91,79,233,.1);
+          color:var(--accent);font-size:.7rem;font-family:var(--ff-display);font-weight:700;letter-spacing:.05em;
+          text-transform:uppercase;margin-bottom:.75rem}
+.post-title{font-family:var(--ff-display);font-size:1.1rem;font-weight:700;margin-bottom:.5rem;line-height:1.3}
+.post-excerpt{font-size:.875rem;color:var(--muted);line-height:1.6;margin-bottom:1rem}
+.post-meta{display:flex;align-items:center;justify-content:space-between;font-size:.75rem;color:var(--muted)}
+.post-author{display:flex;align-items:center;gap:.5rem}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));
+        display:flex;align-items:center;justify-content:center;color:#fff;font-size:.65rem;font-weight:700;flex-shrink:0}
+
+/* FEATURED CARD */
+.post-card.featured{grid-column:1/-1}
+.post-card.featured .post-card-img{height:300px}
+.post-card.featured .post-title{font-size:1.6rem}
+
+/* ===================== 3D CARD TILT ===================== */
+.tilt-card{transform-style:preserve-3d;transition:transform .1s}
+.tilt-shine{position:absolute;inset:0;border-radius:var(--r);background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.15),transparent 60%);
+            pointer-events:none;opacity:0;transition:opacity .3s}
+.tilt-card:hover .tilt-shine{opacity:1}
+
+/* ===================== STATS BAR ===================== */
+.stats-bar{background:var(--ink);color:#fff;padding:2.5rem clamp(1rem,5vw,4rem);
+           display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2rem;text-align:center;position:relative;z-index:1}
+.stat-num{font-family:var(--ff-display);font-size:clamp(2rem,5vw,3.5rem);font-weight:800;
+          background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;
+          -webkit-text-fill-color:transparent;background-clip:text}
+.stat-label{font-size:.8rem;color:rgba(255,255,255,.5);font-family:var(--ff-display);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-top:.25rem}
+
+/* ===================== ABOUT PAGE ===================== */
+.about-hero{padding:5rem clamp(1rem,5vw,4rem) 3rem;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;max-width:1200px;margin:0 auto}
+.about-img-wrap{position:relative}
+.about-3d-cube{width:320px;height:320px;perspective:800px;margin:auto;cursor:pointer}
+.cube{width:200px;height:200px;position:relative;transform-style:preserve-3d;
+      animation:rotateCube 12s infinite linear;margin:60px auto;transform:rotateX(-15deg) rotateY(0deg)}
+.cube-face{position:absolute;width:200px;height:200px;border:2px solid rgba(91,79,233,.4);
+           display:flex;align-items:center;justify-content:center;font-size:2rem;
+           backdrop-filter:blur(4px)}
+.cube-face.front {background:rgba(91,79,233,.15);transform:translateZ(100px)}
+.cube-face.back  {background:rgba(233,79,106,.15);transform:rotateY(180deg) translateZ(100px)}
+.cube-face.left  {background:rgba(91,79,233,.10);transform:rotateY(-90deg) translateZ(100px)}
+.cube-face.right {background:rgba(233,79,106,.10);transform:rotateY(90deg)  translateZ(100px)}
+.cube-face.top   {background:rgba(91,79,233,.08);transform:rotateX(90deg)   translateZ(100px)}
+.cube-face.bottom{background:rgba(233,79,106,.08);transform:rotateX(-90deg)  translateZ(100px)}
+.about-badge{position:absolute;top:1rem;right:1rem;background:var(--accent);color:#fff;
+             padding:.5rem 1rem;border-radius:40px;font-family:var(--ff-display);font-weight:700;font-size:.8rem}
+.about-content .section-label{margin-bottom:.75rem}
+.about-content h1{font-family:var(--ff-display);font-size:clamp(2rem,4vw,3.5rem);font-weight:800;letter-spacing:-0.03em;margin-bottom:1.5rem;line-height:1.1}
+.about-content p{color:var(--muted);margin-bottom:1.25rem;line-height:1.8;font-size:1rem}
+.skill-pills{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.5rem}
+.skill-pill{padding:.35rem .9rem;border:1.5px solid var(--border);border-radius:40px;font-size:.78rem;
+            font-family:var(--ff-display);font-weight:600;color:var(--muted);transition:all .2s}
+.skill-pill:hover{border-color:var(--accent);color:var(--accent);background:rgba(91,79,233,.06)}
+.timeline{padding:0 clamp(1rem,5vw,4rem) 5rem;max-width:800px;margin:0 auto}
+.timeline h2{font-family:var(--ff-display);font-size:2rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:2rem}
+.tl-item{display:grid;grid-template-columns:80px 1fr;gap:1.5rem;margin-bottom:2rem;position:relative}
+.tl-item::before{content:'';position:absolute;left:39px;top:40px;bottom:-2rem;width:2px;background:var(--border)}
+.tl-item:last-child::before{display:none}
+.tl-dot{width:16px;height:16px;border-radius:50%;background:var(--accent);margin-top:4px;box-shadow:0 0 0 4px rgba(91,79,233,.2);flex-shrink:0;align-self:start;margin:4px auto 0}
+.tl-year{font-family:var(--ff-display);font-weight:800;font-size:.85rem;color:var(--muted);padding-top:2px;text-align:center}
+.tl-content h4{font-family:var(--ff-display);font-weight:700;margin-bottom:.25rem}
+.tl-content p{font-size:.875rem;color:var(--muted)}
+
+/* ===================== CONTACT PAGE ===================== */
+.contact-wrap{max-width:1100px;margin:0 auto;padding:4rem clamp(1rem,5vw,4rem);display:grid;grid-template-columns:1fr 1.3fr;gap:4rem;align-items:start}
+.contact-info h1{font-family:var(--ff-display);font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-0.03em;margin-bottom:1rem}
+.contact-info p{color:var(--muted);margin-bottom:2rem;line-height:1.8}
+.contact-detail{display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem}
+.contact-icon{width:44px;height:44px;border-radius:10px;background:rgba(91,79,233,.1);display:flex;align-items:center;
+              justify-content:center;font-size:1.1rem;flex-shrink:0;color:var(--accent)}
+.contact-detail-text span{display:block;font-size:.75rem;font-family:var(--ff-display);font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.contact-detail-text strong{font-family:var(--ff-display);font-size:.95rem}
+.contact-socials{display:flex;gap:.75rem;margin-top:2rem}
+.social-btn{width:40px;height:40px;border-radius:10px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;
+            font-size:1rem;transition:all .2s}
+.social-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(91,79,233,.06)}
+
+/* FORM */
+.contact-form{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2.5rem;box-shadow:var(--shadow)}
+.contact-form h2{font-family:var(--ff-display);font-size:1.4rem;font-weight:800;margin-bottom:1.75rem}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.form-group{margin-bottom:1.25rem}
+.form-group label{display:block;font-size:.78rem;font-family:var(--ff-display);font-weight:700;letter-spacing:.05em;
+                  text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:.85rem 1rem;border:1.5px solid var(--border);
+  border-radius:8px;font-family:var(--ff-body);font-size:.9rem;background:var(--paper);
+  color:var(--ink);transition:border-color .2s,box-shadow .2s;outline:none;resize:none}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,79,233,.12)}
+.form-group textarea{height:120px}
+.form-success{display:none;text-align:center;padding:2rem;color:var(--accent)}
+.form-success .check{font-size:3rem;margin-bottom:1rem}
+.form-success h3{font-family:var(--ff-display);font-size:1.3rem;font-weight:800;margin-bottom:.5rem}
+.form-success p{color:var(--muted);font-size:.9rem}
+
+/* ===================== LEGAL PAGES ===================== */
+.legal-hero{padding:4rem clamp(1rem,5vw,4rem) 2rem;max-width:800px;margin:0 auto;text-align:center}
+.legal-hero h1{font-family:var(--ff-display);font-size:clamp(2rem,5vw,3.5rem);font-weight:800;letter-spacing:-0.04em;margin-bottom:.75rem}
+.legal-hero p{color:var(--muted);font-size:.9rem}
+.legal-content{max-width:800px;margin:0 auto;padding:1rem clamp(1rem,5vw,4rem) 5rem}
+.legal-content h2{font-family:var(--ff-display);font-size:1.3rem;font-weight:800;margin:2.5rem 0 .75rem;
+                  padding-left:1rem;border-left:3px solid var(--accent)}
+.legal-content h3{font-family:var(--ff-display);font-size:1rem;font-weight:700;margin:1.5rem 0 .5rem;color:var(--accent)}
+.legal-content p{color:var(--muted);line-height:1.85;margin-bottom:1rem;font-size:.93rem}
+.legal-content ul{padding-left:1.5rem;margin-bottom:1rem}
+.legal-content ul li{color:var(--muted);line-height:1.8;font-size:.93rem;margin-bottom:.4rem;list-style:disc}
+.legal-badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(91,79,233,.08);
+             border:1px solid rgba(91,79,233,.2);border-radius:40px;padding:.4rem 1rem;
+             font-size:.75rem;font-family:var(--ff-display);font-weight:700;color:var(--accent);margin-bottom:2rem}
+
+/* ===================== FOOTER ===================== */
+footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;position:relative;z-index:1}
+.footer-top{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
+.footer-brand .nav-logo{display:inline-block;margin-bottom:1rem;font-size:1.75rem}
+.footer-brand p{font-size:.875rem;color:rgba(255,255,255,.45);line-height:1.7;max-width:240px}
+.footer-col h4{font-family:var(--ff-display);font-weight:700;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;
+               color:rgba(255,255,255,.4);margin-bottom:1.25rem}
+.footer-col a{display:block;color:rgba(255,255,255,.65);font-size:.875rem;margin-bottom:.75rem;transition:color .2s}
+.footer-col a:hover{color:#fff}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,.1);
+               padding-top:2rem;font-size:.8rem;color:rgba(255,255,255,.35);gap:1rem;flex-wrap:wrap}
+.footer-bottom a{color:rgba(255,255,255,.35);transition:color .2s}
+.footer-bottom a:hover{color:#fff}
+
+/* ===================== NEWSLETTER ===================== */
+.newsletter{background:linear-gradient(135deg,var(--accent),#7C5FF7);padding:4rem clamp(1rem,5vw,4rem);
+            text-align:center;position:relative;overflow:hidden;z-index:1}
+.newsletter::before{content:'';position:absolute;width:600px;height:600px;border-radius:50%;
+                    background:rgba(255,255,255,.04);top:-200px;left:-100px}
+.newsletter::after{content:'';position:absolute;width:400px;height:400px;border-radius:50%;
+                   background:rgba(255,255,255,.04);bottom:-150px;right:-50px}
+.newsletter h2{font-family:var(--ff-display);font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;
+               color:#fff;letter-spacing:-0.03em;margin-bottom:.75rem;position:relative;z-index:1}
+.newsletter p{color:rgba(255,255,255,.75);margin-bottom:2rem;position:relative;z-index:1}
+.newsletter-form{display:flex;gap:.75rem;max-width:480px;margin:0 auto;position:relative;z-index:1}
+.newsletter-form input{flex:1;padding:.85rem 1.25rem;border:none;border-radius:40px;font-family:var(--ff-body);
+                        font-size:.9rem;outline:none;background:#fff}
+.newsletter-form button{padding:.85rem 1.5rem;background:var(--ink);color:#fff;border-radius:40px;
+                         font-family:var(--ff-display);font-weight:700;font-size:.875rem;
+                         white-space:nowrap;transition:transform .2s}
+.newsletter-form button:hover{transform:scale(1.03)}
+
+/* ===================== BLOG PAGE ===================== */
+.blog-header{padding:4rem clamp(1rem,5vw,4rem) 2rem;max-width:1200px;margin:0 auto}
+.blog-header h1{font-family:var(--ff-display);font-size:clamp(2.5rem,5vw,4rem);font-weight:800;letter-spacing:-0.04em;margin-bottom:.5rem}
+.blog-filters{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1.5rem}
+.filter-btn{padding:.4rem .9rem;border:1.5px solid var(--border);border-radius:40px;font-size:.78rem;
+            font-family:var(--ff-display);font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s;background:transparent}
+.filter-btn:hover,.filter-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(91,79,233,.06)}
+.blog-grid{max-width:1200px;margin:0 auto;padding:0 clamp(1rem,5vw,4rem) 4rem}
+
+/* ===================== SINGLE POST ===================== */
+.single-post{max-width:760px;margin:0 auto;padding:4rem clamp(1rem,5vw,4rem)}
+.single-post-header{margin-bottom:2.5rem}
+.single-post-header h1{font-family:var(--ff-display);font-size:clamp(2rem,5vw,3.5rem);font-weight:800;letter-spacing:-0.04em;line-height:1.1;margin-bottom:1.25rem}
+.single-post-meta{display:flex;align-items:center;gap:1.5rem;color:var(--muted);font-size:.85rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.single-post-cover{height:400px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+                   border-radius:16px;display:flex;align-items:center;justify-content:center;
+                   font-size:5rem;margin-bottom:3rem;position:relative;overflow:hidden}
+.single-post-cover::before{content:'';position:absolute;inset:0;background:inherit;opacity:.3;filter:blur(40px);transform:scale(1.2)}
+.single-post-cover span{position:relative;filter:drop-shadow(0 8px 24px rgba(0,0,0,.3));animation:float 4s ease-in-out infinite}
+.post-body{font-size:1.05rem;line-height:1.85;color:var(--ink)}
+.post-body p{margin-bottom:1.5rem}
+.post-body h2{font-family:var(--ff-display);font-size:1.5rem;font-weight:800;margin:2rem 0 .75rem;letter-spacing:-0.02em}
+.post-body h3{font-family:var(--ff-display);font-size:1.15rem;font-weight:700;margin:1.5rem 0 .5rem;color:var(--accent)}
+.post-body blockquote{border-left:4px solid var(--accent);padding:1rem 1.5rem;margin:2rem 0;
+                       background:rgba(91,79,233,.05);border-radius:0 8px 8px 0;
+                       font-family:var(--ff-serif);font-size:1.15rem;font-style:italic;color:var(--accent)}
+.back-btn{display:inline-flex;align-items:center;gap:.5rem;font-family:var(--ff-display);font-weight:700;
+          font-size:.875rem;color:var(--muted);margin-bottom:2rem;transition:color .2s;cursor:pointer}
+.back-btn:hover{color:var(--accent)}
+
+/* ===================== SEARCH ===================== */
+.search-bar{display:flex;align-items:center;gap:.75rem;background:var(--card);border:1.5px solid var(--border);
+            border-radius:40px;padding:.6rem 1.25rem;max-width:480px;margin:1.5rem 0}
+.search-bar input{border:none;outline:none;background:none;font-family:var(--ff-body);font-size:.9rem;
+                   color:var(--ink);flex:1;width:100%}
+.search-bar span{color:var(--muted);font-size:1rem;flex-shrink:0}
+
+/* ===================== FLOATING PARTICLES ===================== */
+.particle{position:fixed;border-radius:50%;pointer-events:none;z-index:0;animation:drift linear infinite}
+
+/* ===================== TOAST ===================== */
+.toast{position:fixed;bottom:2rem;right:2rem;background:var(--ink);color:#fff;padding:1rem 1.5rem;
+       border-radius:12px;font-family:var(--ff-display);font-weight:600;font-size:.875rem;
+       transform:translateY(100px);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1);z-index:9999;max-width:300px}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-left:4px solid #22c55e}
+.toast.error  {border-left:4px solid var(--accent2)}
+
+/* ===================== ANIMATIONS ===================== */
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+@keyframes rotateCube{from{transform:rotateX(-15deg) rotateY(0deg)}to{transform:rotateX(-15deg) rotateY(360deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+@keyframes scrollPulse{0%,100%{opacity:1}50%{opacity:0.2}}
+@keyframes drift{0%{transform:translateY(100vh) rotate(0deg)}100%{transform:translateY(-100px) rotate(360deg)}}
+@keyframes reveal{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+.reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* ===================== RESPONSIVE ===================== */
+@media(max-width:900px){
+  .about-hero{grid-template-columns:1fr;gap:2rem}
+  .about-3d-cube{width:260px;height:260px}
+  .cube{width:160px;height:160px}
+  .cube-face{width:160px;height:160px}
+  .cube-face.front,.cube-face.back,.cube-face.left,.cube-face.right,.cube-face.top,.cube-face.bottom{transform-origin:50%}
+  .cube-face.front {transform:translateZ(80px)}
+  .cube-face.back  {transform:rotateY(180deg) translateZ(80px)}
+  .cube-face.left  {transform:rotateY(-90deg) translateZ(80px)}
+  .cube-face.right {transform:rotateY(90deg)  translateZ(80px)}
+  .cube-face.top   {transform:rotateX(90deg)  translateZ(80px)}
+  .cube-face.bottom{transform:rotateX(-90deg) translateZ(80px)}
+  .contact-wrap{grid-template-columns:1fr}
+  .footer-top{grid-template-columns:1fr 1fr}
+  .form-row{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .nav-links{display:none}
+  .hamburger{display:flex}
+  .footer-top{grid-template-columns:1fr}
+  .newsletter-form{flex-direction:column}
+  .footer-bottom{flex-direction:column;text-align:center}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+
+<!-- 3D Canvas Background -->
+<canvas id="canvas3d"></canvas>
+
+<!-- Floating Particles -->
+<div id="particles"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ===================== NAVBAR ===================== -->
+<nav class="nav" id="navbar">
+  <div class="nav-logo" onclick="navigate('home')">Bolgerr</div>
+  <div class="nav-links">
+    <a href="#" onclick="event.preventDefault(); navigate('home')" id="nav-home">Home</a>
+    <a href="#" onclick="event.preventDefault(); navigate('blog')" id="nav-blog">Blog</a>
+    <a href="#" onclick="event.preventDefault(); navigate('about')" id="nav-about">About</a>
+    <a href="#" onclick="event.preventDefault(); navigate('contact')" id="nav-contact">Contact</a>
+    <a href="#" onclick="event.preventDefault(); navigate('contact')" class="nav-cta">Write for Us</a>
+  </div>
+  <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#" onclick="event.preventDefault(); navigate('home');toggleMenu()">Home</a>
+  <a href="#" onclick="event.preventDefault(); navigate('blog');toggleMenu()">Blog</a>
+  <a href="#" onclick="event.preventDefault(); navigate('about');toggleMenu()">About</a>
+  <a href="#" onclick="event.preventDefault(); navigate('contact');toggleMenu()">Contact</a>
+  <a href="#" onclick="event.preventDefault(); navigate('privacy');toggleMenu()">Privacy Policy</a>
+  <a href="#" onclick="event.preventDefault(); navigate('disclaimer');toggleMenu()">Disclaimer</a>
+  <a href="#" onclick="event.preventDefault(); navigate('terms');toggleMenu()">Terms & Conditions</a>
+</div>
+
+<!-- ===================== HOME PAGE ===================== -->
+<div class="page active" id="page-home">
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-eyebrow">✦ Welcome to Bolgerr</div>
+    <h1 class="hero-title">
+      <span>Ideas Worth</span>
+      <span class="italic">Reading.</span>
+    </h1>
+    <p class="hero-sub">Thoughtful writing on technology, design, culture, and the curious intersections between them.</p>
+    <div class="hero-actions">
+      <button class="btn-primary" onclick="navigate('blog')">Explore Articles</button>
+      <button class="btn-outline" onclick="navigate('about')">Meet the Author</button>
+    </div>
+    <div class="hero-scroll">
+      <span>Scroll</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <div class="stats-bar reveal">
+    <div><div class="stat-num" data-target="248">0</div><div class="stat-label">Articles Published</div></div>
+    <div><div class="stat-num" data-target="94">0</div><div class="stat-label">K Readers Monthly</div></div>
+    <div><div class="stat-num" data-target="12">0</div><div class="stat-label">Categories</div></div>
+    <div><div class="stat-num" data-target="6">0</div><div class="stat-label">Years Running</div></div>
+  </div>
+
+  <!-- Featured Posts -->
+  <section class="section">
+    <div class="section-label">✦ Featured This Week</div>
+    <h2 class="section-title">Stories that Matter</h2>
+    <p class="section-sub">Hand-picked reads from across our categories — because good writing deserves to be found.</p>
+    <div class="posts-grid" id="featuredPosts"></div>
+  </section>
+
+  <!-- Newsletter -->
+  <div class="newsletter reveal">
+    <h2>Never Miss a Read</h2>
+    <p>Join 94,000+ readers who get our weekly digest of ideas, stories, and essays.</p>
+    <div class="newsletter-form">
+      <input type="email" id="newsletterEmail" placeholder="your@email.com"/>
+      <button onclick="subscribeNewsletter()">Subscribe Free</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== BLOG PAGE ===================== -->
+<div class="page" id="page-blog">
+  <div class="blog-header">
+    <div class="section-label">✦ All Articles</div>
+    <h1>The Bolgerr Archive</h1>
+    <p style="color:var(--muted);margin-top:.5rem">Over 248 essays, tutorials, and stories across 12 categories.</p>
+    <div class="search-bar">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="Search articles..." oninput="filterPosts()"/>
+    </div>
+    <div class="blog-filters">
+      <button class="filter-btn active" onclick="setFilter('All',this)">All</button>
+      <button class="filter-btn" onclick="setFilter('Technology',this)">Technology</button>
+      <button class="filter-btn" onclick="setFilter('Design',this)">Design</button>
+      <button class="filter-btn" onclick="setFilter('Culture',this)">Culture</button>
+      <button class="filter-btn" onclick="setFilter('Science',this)">Science</button>
+      <button class="filter-btn" onclick="setFilter('Life',this)">Life</button>
+      <button class="filter-btn" onclick="setFilter('Business',this)">Business</button>
+    </div>
+  </div>
+  <div class="blog-grid">
+    <div class="posts-grid" id="allPosts"></div>
+  </div>
+</div>
+
+<!-- ===================== SINGLE POST PAGE ===================== -->
+<div class="page" id="page-post">
+  <div class="single-post" id="singlePostContent"></div>
+</div>
+
+<!-- ===================== ABOUT PAGE ===================== -->
+<div class="page" id="page-about">
+  <div class="about-hero">
+    <div class="about-img-wrap">
+      <div class="about-3d-cube">
+        <div class="cube">
+          <div class="cube-face front">✍️</div>
+          <div class="cube-face back">💡</div>
+          <div class="cube-face left">🎨</div>
+          <div class="cube-face right">🌍</div>
+          <div class="cube-face top">⚡</div>
+          <div class="cube-face bottom">📖</div>
+        </div>
+      </div>
+      <div class="about-badge">Est. 2019</div>
+    </div>
+    <div class="about-content">
+      <div class="section-label">✦ About Bolgerr</div>
+      <h1>A Blog Born From Curiosity</h1>
+      <p>Bolgerr started in a small apartment in 2019 with a single idea: that great writing can change how we see the world. What began as a personal journal became one of the most-read independent blogs on the internet.</p>
+      <p>We write about technology, design, culture, science, and the fascinating collisions between them. Every piece is crafted with care — no clickbait, no filler, just ideas worth your time.</p>
+      <p>Our team of writers, researchers, and editors are united by a single belief: <em>the best stories are the ones that make you think differently about something you thought you understood.</em></p>
+      <div class="skill-pills">
+        <span class="skill-pill">Technology</span>
+        <span class="skill-pill">Design</span>
+        <span class="skill-pill">Culture</span>
+        <span class="skill-pill">Science</span>
+        <span class="skill-pill">Business</span>
+        <span class="skill-pill">Philosophy</span>
+        <span class="skill-pill">Psychology</span>
+        <span class="skill-pill">Environment</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="timeline">
+    <h2>Our Journey</h2>
+    <div class="tl-item">
+      <div><div class="tl-year">2019</div><div class="tl-dot"></div></div>
+      <div class="tl-content"><h4>Bolgerr Launches</h4><p>Started as a personal blog with 3 articles and zero readers. The first post: "Why I Quit My Job to Write."</p></div>
+    </div>
+    <div class="tl-item">
+      <div><div class="tl-year">2020</div><div class="tl-dot"></div></div>
+      <div class="tl-content"><h4>First 10,000 Readers</h4><p>A piece on remote work went viral. Within weeks, we hit 10K monthly readers and launched our newsletter.</p></div>
+    </div>
+    <div class="tl-item">
+      <div><div class="tl-year">2021</div><div class="tl-dot"></div></div>
+      <div class="tl-content"><h4>Team Expands</h4><p>Brought on our first contributing writer and a dedicated editor. Published 100 articles this year alone.</p></div>
+    </div>
+    <div class="tl-item">
+      <div><div class="tl-year">2023</div><div class="tl-dot"></div></div>
+      <div class="tl-content"><h4>50,000 Subscribers</h4><p>Our newsletter crossed 50K subscribers. Launched the Design and Science verticals.</p></div>
+    </div>
+    <div class="tl-item">
+      <div><div class="tl-year">2025</div><div class="tl-dot"></div></div>
+      <div class="tl-content"><h4>94K Monthly Readers</h4><p>Bolgerr ranks among the top 500 independent blogs globally. Still independent, still ad-light.</p></div>
+    </div>
+  </div>
+
+  <div class="newsletter reveal" style="margin-top:0">
+    <h2>Like What We Do?</h2>
+    <p>Subscribe to the Bolgerr Weekly — curated reads, no noise.</p>
+    <div class="newsletter-form">
+      <input type="email" placeholder="your@email.com"/>
+      <button onclick="subscribeNewsletter()">Join the List</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== CONTACT PAGE ===================== -->
+<div class="page" id="page-contact">
+  <div class="contact-wrap">
+    <div class="contact-info">
+      <div class="section-label">✦ Get In Touch</div>
+      <h1>Let's Start a Conversation</h1>
+      <p>Whether you want to pitch a story, report an error, discuss a collaboration, or just say hello — we'd love to hear from you.</p>
+
+      <div class="contact-detail">
+        <div class="contact-icon">📧</div>
+        <div class="contact-detail-text"><span>Email</span><strong>hello@bolgerr.com</strong></div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-icon">📍</div>
+        <div class="contact-detail-text"><span>Location</span><strong>Bengaluru, India</strong></div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-icon">⏰</div>
+        <div class="contact-detail-text"><span>Response Time</span><strong>Within 24–48 hours</strong></div>
+      </div>
+      <div class="contact-detail">
+        <div class="contact-icon">✍️</div>
+        <div class="contact-detail-text"><span>Pitches Welcome</span><strong>Open to contributors</strong></div>
+      </div>
+
+      <div class="contact-socials">
+        <a class="social-btn" href="#" title="Twitter">𝕏</a>
+        <a class="social-btn" href="#" title="Instagram">📸</a>
+        <a class="social-btn" href="#" title="LinkedIn">in</a>
+        <a class="social-btn" href="#" title="RSS">📡</a>
+      </div>
+    </div>
+
+    <div class="contact-form" id="contactFormWrap">
+      <h2>Send a Message</h2>
+      <div id="contactFormInner">
+        <div class="form-row">
+          <div class="form-group"><label>First Name</label><input type="text" id="fname" placeholder="Alex"/></div>
+          <div class="form-group"><label>Last Name</label><input type="text" id="lname" placeholder="Morgan"/></div>
+        </div>
+        <div class="form-group"><label>Email Address</label><input type="email" id="cemail" placeholder="you@email.com"/></div>
+        <div class="form-group">
+          <label>Subject</label>
+          <select id="csubject">
+            <option value="">Select a topic…</option>
+            <option>Story Pitch</option>
+            <option>Partnership / Sponsorship</option>
+            <option>Correction or Feedback</option>
+            <option>Media Inquiry</option>
+            <option>General Hello</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Your Message</label><textarea id="cmessage" placeholder="Tell us what's on your mind…"></textarea></div>
+            <button id="contactSubmitButton" type="button" class="btn-primary" style="width:100%;justify-content:center;display:flex;cursor:pointer;user-select:none">Send Message →</button>
+      </div>
+      <div class="form-success" id="formSuccess">
+        <div class="check">✅</div>
+        <h3>Message Received!</h3>
+        <p>Thanks for reaching out. We'll get back to you within 24–48 hours.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== PRIVACY POLICY ===================== -->
+<div class="page" id="page-privacy">
+  <div class="legal-hero">
+    <div class="section-label">✦ Legal</div>
+    <h1>Privacy Policy</h1>
+    <p>Last updated: June 2025 · Effective immediately</p>
+    <br><span class="legal-badge">🔒 Your privacy matters to us</span>
+  </div>
+  <div class="legal-content">
+    <p>Bolgerr ("we," "us," or "our") is committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit bolgerr.com.</p>
+    
+    <h2>1. Information We Collect</h2>
+    <p>We collect information that you voluntarily provide when you subscribe to our newsletter, submit a contact form, or leave a comment. This may include:</p>
+    <ul>
+      <li>Name and email address (newsletter subscription, contact forms)</li>
+      <li>IP address and browser type (automatically via server logs)</li>
+      <li>Pages visited, time on page, referral source (via analytics)</li>
+      <li>Device information and operating system</li>
+    </ul>
+    <p>We do <strong>not</strong> collect sensitive personal data such as financial information, government ID numbers, or health data.</p>
+
+    <h2>2. How We Use Your Information</h2>
+    <p>We use the information we collect for the following purposes:</p>
+    <ul>
+      <li>To send you our newsletter and content updates you subscribed to</li>
+      <li>To respond to your inquiries and contact form submissions</li>
+      <li>To analyze site traffic and improve our content</li>
+      <li>To detect and prevent fraud or abuse</li>
+      <li>To comply with legal obligations</li>
+    </ul>
+
+    <h2>3. Cookies & Tracking</h2>
+    <p>Bolgerr uses cookies and similar technologies to enhance your experience. We use:</p>
+    <ul>
+      <li><strong>Essential cookies:</strong> Required for the website to function</li>
+      <li><strong>Analytics cookies:</strong> To understand how visitors use our site (via Google Analytics)</li>
+      <li><strong>Preference cookies:</strong> To remember your settings</li>
+    </ul>
+    <p>You can control cookies through your browser settings. Disabling cookies may affect certain features of our website.</p>
+
+    <h2>4. Third-Party Services</h2>
+    <p>We may share your data with trusted third parties including email service providers, analytics platforms, and CDN services. We do not sell your personal data to any third party.</p>
+
+    <h2>5. Data Retention</h2>
+    <p>We retain your personal information for as long as necessary to fulfill the purposes outlined in this policy, or as required by law. Newsletter subscribers' data is retained until they unsubscribe.</p>
+
+    <h2>6. Your Rights</h2>
+    <p>Depending on your location, you may have the right to: access your data, correct inaccurate data, request deletion, object to processing, or request data portability. Contact us at privacy@bolgerr.com to exercise these rights.</p>
+
+    <h2>7. Children's Privacy</h2>
+    <p>Bolgerr is not directed at children under 13. We do not knowingly collect personal information from children. If you believe a child has provided us personal information, please contact us immediately.</p>
+
+    <h2>8. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. We will notify newsletter subscribers of significant changes and update the "Last updated" date at the top of this page.</p>
+
+    <h2>9. Contact Us</h2>
+    <p>For privacy-related concerns, email us at <strong>privacy@bolgerr.com</strong> or use our <a href="#" onclick="event.preventDefault(); navigate('contact')" style="color:var(--accent)">contact form</a>.</p>
+  </div>
+</div>
+
+<!-- ===================== DISCLAIMER ===================== -->
+<div class="page" id="page-disclaimer">
+  <div class="legal-hero">
+    <div class="section-label">✦ Legal</div>
+    <h1>Disclaimer</h1>
+    <p>Last updated: June 2025 · Please read carefully</p>
+    <br><span class="legal-badge">⚠️ Important information</span>
+  </div>
+  <div class="legal-content">
+    <p>The information provided on Bolgerr (bolgerr.com) is for general informational and educational purposes only. All information on the site is provided in good faith; however, we make no representation or warranty of any kind, express or implied, regarding the accuracy, adequacy, validity, reliability, availability, or completeness of any information on the site.</p>
+
+    <h2>1. No Professional Advice</h2>
+    <p>Nothing on Bolgerr constitutes professional advice of any kind — including but not limited to legal, financial, medical, psychological, or technical advice. Our articles are written by independent authors sharing their opinions and research. Always consult a qualified professional before making decisions based on information found on this site.</p>
+
+    <h2>2. External Links</h2>
+    <p>Bolgerr may contain links to external websites that are not provided or maintained by us. We do not guarantee the accuracy, relevance, timeliness, or completeness of any information on these external websites. The inclusion of any links does not necessarily imply a recommendation or endorsement of the views expressed within them.</p>
+
+    <h2>3. Opinions & Views</h2>
+    <p>Articles and commentary on Bolgerr represent the personal opinions of the respective authors and do not necessarily reflect the views of Bolgerr as a publication, its editors, or its partners. Reader discretion is advised.</p>
+
+    <h2>4. Affiliate Disclosure</h2>
+    <p>Some articles on Bolgerr may contain affiliate links. If you click on an affiliate link and make a purchase, we may receive a small commission at no additional cost to you. We only recommend products and services we genuinely believe in, and affiliate relationships do not influence our editorial content.</p>
+
+    <h2>5. Errors and Omissions</h2>
+    <p>While we strive for accuracy, the publishing landscape changes rapidly. Information that is accurate at the time of publishing may become outdated. We are not liable for errors, omissions, or results obtained from the use of this information. If you notice an error, please contact us at corrections@bolgerr.com.</p>
+
+    <h2>6. Limitation of Liability</h2>
+    <p>Under no circumstance shall Bolgerr or its authors be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the site, whether based on warranty, contract, tort (including negligence), or any other legal theory. This limitation applies even if Bolgerr has been advised of the possibility of such damages.</p>
+
+    <h2>7. Fair Use</h2>
+    <p>Bolgerr may use third-party content (quotes, statistics, images) in accordance with fair use principles for commentary, criticism, and educational purposes. If you believe your copyrighted material has been used inappropriately, please contact us at legal@bolgerr.com.</p>
+
+    <h2>8. Changes</h2>
+    <p>We reserve the right to modify this disclaimer at any time. Continued use of the site following changes constitutes acceptance of the updated disclaimer.</p>
+  </div>
+</div>
+
+<!-- ===================== TERMS & CONDITIONS ===================== -->
+<div class="page" id="page-terms">
+  <div class="legal-hero">
+    <div class="section-label">✦ Legal</div>
+    <h1>Terms & Conditions</h1>
+    <p>Last updated: June 2025 · Effective for all users</p>
+    <br><span class="legal-badge">📄 Governing your use of Bolgerr</span>
+  </div>
+  <div class="legal-content">
+    <p>By accessing or using Bolgerr (bolgerr.com), you agree to be bound by these Terms and Conditions. If you disagree with any part of these terms, you must not access the website.</p>
+
+    <h2>1. Intellectual Property</h2>
+    <p>All content on Bolgerr — including articles, essays, images, graphics, logos, and code — is the exclusive property of Bolgerr or its contributing authors and is protected by copyright law. You may not reproduce, distribute, or create derivative works without express written permission.</p>
+
+    <h3>What You May Do</h3>
+    <ul>
+      <li>Share links to articles on social media or other platforms</li>
+      <li>Quote brief excerpts (under 100 words) with clear attribution and a link back</li>
+      <li>Print articles for personal, non-commercial use</li>
+    </ul>
+
+    <h3>What You May Not Do</h3>
+    <ul>
+      <li>Republish, scrape, or aggregate our articles without permission</li>
+      <li>Use our content for commercial purposes without a license</li>
+      <li>Remove author attribution or copyright notices</li>
+      <li>Train AI models on our content without written consent</li>
+    </ul>
+
+    <h2>2. User Conduct</h2>
+    <p>When using Bolgerr, you agree not to:</p>
+    <ul>
+      <li>Post or transmit any content that is unlawful, offensive, threatening, or violates any third-party rights</li>
+      <li>Use the site to distribute spam or unsolicited communications</li>
+      <li>Attempt to gain unauthorized access to any part of the website</li>
+      <li>Use automated tools to scrape or harvest content or user data</li>
+      <li>Impersonate Bolgerr staff or other users</li>
+      <li>Post content that infringes upon intellectual property rights</li>
+    </ul>
+
+    <h2>3. Comments & User-Generated Content</h2>
+    <p>Users who post comments on Bolgerr retain ownership of their content but grant Bolgerr a non-exclusive, royalty-free license to display, distribute, and moderate that content. We reserve the right to remove comments that violate these terms without notice.</p>
+
+    <h2>4. Newsletter Subscription</h2>
+    <p>By subscribing to our newsletter, you consent to receiving emails from Bolgerr. You may unsubscribe at any time via the unsubscribe link in any email. We will not share your email address with third parties for their marketing purposes.</p>
+
+    <h2>5. Submissions & Pitches</h2>
+    <p>When you submit an article pitch or draft, you represent that you are the original author, the work does not infringe any third-party rights, and you grant Bolgerr an option to publish with your byline under mutually agreed terms. Unsolicited submissions do not create an obligation to publish or compensate.</p>
+
+    <h2>6. Advertising & Sponsorships</h2>
+    <p>Bolgerr may display advertisements or publish sponsored content. Sponsored content will always be clearly labeled. We maintain editorial independence; advertisers do not have control over our editorial decisions.</p>
+
+    <h2>7. Termination</h2>
+    <p>We reserve the right to terminate or restrict access to Bolgerr — including newsletter subscription and commenting privileges — for any user who violates these Terms, at our sole discretion and without prior notice.</p>
+
+    <h2>8. Governing Law</h2>
+    <p>These Terms are governed by and construed in accordance with the laws of India. Any disputes shall be resolved in the competent courts of Bengaluru, Karnataka.</p>
+
+    <h2>9. Contact</h2>
+    <p>For questions about these Terms, contact us at legal@bolgerr.com or through our <a href="#" onclick="event.preventDefault(); navigate('contact')" style="color:var(--accent)">contact page</a>.</p>
+  </div>
+</div>
+
+<!-- ===================== FOOTER ===================== -->
+<footer id="siteFooter">
+  <div class="footer-top">
+    <div class="footer-brand">
+      <div class="nav-logo">Bolgerr</div>
+      <p>Thoughtful writing on technology, design, culture, and the ideas shaping our world.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Explore</h4>
+      <a href="#" onclick="event.preventDefault(); navigate('home')">Home</a>
+      <a href="#" onclick="event.preventDefault(); navigate('blog')">All Articles</a>
+      <a href="#" onclick="event.preventDefault(); navigate('about')">About Us</a>
+      <a href="#" onclick="event.preventDefault(); navigate('contact')">Contact</a>
+    </div>
+    <div class="footer-col">
+      <h4>Categories</h4>
+      <a href="#" onclick="event.preventDefault(); navigate('blog');setFilter('Technology')">Technology</a>
+      <a href="#" onclick="event.preventDefault(); navigate('blog');setFilter('Design')">Design</a>
+      <a href="#" onclick="event.preventDefault(); navigate('blog');setFilter('Culture')">Culture</a>
+      <a href="#" onclick="event.preventDefault(); navigate('blog');setFilter('Science')">Science</a>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <a href="#" onclick="event.preventDefault(); navigate('privacy')">Privacy Policy</a>
+      <a href="#" onclick="event.preventDefault(); navigate('disclaimer')">Disclaimer</a>
+      <a href="#" onclick="event.preventDefault(); navigate('terms')">Terms & Conditions</a>
+      <a href="#" onclick="event.preventDefault(); navigate('contact')">Contact Us</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 Bolgerr. All rights reserved.</span>
+    <div style="display:flex;gap:1.5rem">
+      <a href="#" onclick="event.preventDefault(); navigate('privacy')">Privacy</a>
+      <a href="#" onclick="event.preventDefault(); navigate('terms')">Terms</a>
+      <a href="#" onclick="event.preventDefault(); navigate('disclaimer')">Disclaimer</a>
+    </div>
+    <span>Made with ❤️ in Bengaluru</span>
+  </div>
+</footer>
+
+<!-- ===================== SCRIPTS ===================== -->
+<script>
+/* ====== DATA STORE ====== */
+/* ====== DATA STORE ====== */
+let POSTS = [];
+
+async function loadPosts() {
+   endpoints = [
+    '/api/posts',
+    'http://localhost:3000/api/posts',
+    'http://localhost:5000/api/posts',
+    'http://localhost:5001/api/posts',
+    'http://localhost:5002/api/posts',
+    'http://127.0.0.1:3000/api/posts',
+    'http://127.0.0.1:5000/api/posts',
+    'http://127.0.0.1:5001/api/posts',
+    'http://127.0.0.1:5002/api/posts',
+  ];
+  for (const url of endpoints) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = await res.json();
+      if (data.success && data.data?.length) {
+        POSTS = data.data;
+        return;
+      }
+    } catch {}
+  }
+  console.warn('Could not load posts from server.');
+}
+
+/* ====== NAVIGATION ====== */
+function navigate(page) {
+  const target = document.getElementById('page-' + page);
+  if (!target) return;
+
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+
+  // Show footer on all except legal pages with special handling
+  const footer = document.getElementById('siteFooter');
+  if (footer) footer.style.display = 'block';
+
+  target.classList.add('active');
+  currentPage = page;
+
+  // Keep the URL hash in sync without causing duplicate navigation loops
+  const currentHash = location.hash.replace('#', '') || 'home';
+  if (currentHash !== page) {
+    history.replaceState(null, '', '#' + page);
+  }
+
+  // Set active nav link
+  const navMap = {home:'nav-home',blog:'nav-blog',about:'nav-about',contact:'nav-contact'};
+  if (navMap[page]) document.getElementById(navMap[page])?.classList.add('active');
+
+  // Scroll to top
+  window.scrollTo({top:0, behavior:'smooth'});
+
+  // Init page-specific things
+  if (page === 'home') renderFeatured();
+  if (page === 'blog') renderAllPosts();
+  if (page === 'about') startCubeInteraction();
+
+  // Trigger reveal animations
+  setTimeout(triggerReveal, 100);
+}
+
+/* ====== RENDER POSTS ====== */
+function createPostCard(post, featured=false) {
+  const el = document.createElement('div');
+  el.className = 'post-card tilt-card' + (featured ? ' featured' : '');
+  el.innerHTML = `
+    <div clasconsts="post-card-img"><span>${post.emoji}</span></div>
+    <div class="tilt-shine"></div>
+    <div class="post-card-body">
+      <div class="post-tag">${post.category}</div>
+      <div class="post-title">${post.title}</div>
+      <div class="post-excerpt">${post.excerpt}</div>
+      <div class="post-meta">
+        <div class="post-author">
+          <div class="avatar">${post.author.split(' ').map(n=>n[0]).join('')}</div>
+          <span>${post.author}</span>
+        </div>
+        <span>${post.readTime} · ${post.date}</span>
+      </div>
+    </div>`;
+  el.addEventListener('click', () => openPost(post.id));
+  initTilt(el);
+  return el;
+}
+
+function renderFeatured() {
+  const container = document.getElementById('featuredPosts');
+  if (!container) return;
+  container.innerHTML = '';
+  const featured = POSTS.filter(p => p.featured);
+  const others = POSTS.filter(p => !p.featured).slice(0,3);
+  featured.forEach((p,i) => container.appendChild(createPostCard(p, i===0)));
+  others.forEach(p => container.appendChild(createPostCard(p)));
+}
+
+function renderAllPosts() {
+  const container = document.getElementById('allPosts');
+  if (!container) return;
+  container.innerHTML = '';
+  const search = document.getElementById('searchInput')?.value?.toLowerCase() || '';
+  let filtered = POSTS.filter(p => {
+    const matchCat = currentFilter === 'All' || p.category === currentFilter;
+    const matchSearch = !search || p.title.toLowerCase().includes(search) || p.excerpt.toLowerCase().includes(search);
+    return matchCat && matchSearch;
+  });
+  if (filtered.length === 0) {
+    container.innerHTML = '<p style="color:var(--muted);text-align:center;padding:3rem;grid-column:1/-1">No articles found. Try a different filter or search term.</p>';
+    return;
+  }
+  filtered.forEach(p => container.appendChild(createPostCard(p)));
+}
+
+function setFilter(cat, btn) {
+  currentFilter = cat;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderAllPosts();
+}
+
+function filterPosts() { renderAllPosts(); }
+
+/* ====== SINGLE POST ====== */
+function openPost(id) {
+  const post = POSTS.find(p => p.id === id);
+  if (!post) return;
+  const container = document.getElementById('singlePostContent');
+  container.innerHTML = `
+    <div class="back-btn" onclick="navigate('${currentPage === 'post' ? 'blog' : currentPage}')">← Back to articles</div>
+    <div class="single-post-header">
+      <div class="post-tag">${post.category}</div>
+      <h1>${post.title}</h1>
+      <div class="single-post-meta">
+        <div class="post-author" style="display:flex;align-items:center;gap:.5rem">
+          <div class="avatar">${post.author.split(' ').map(n=>n[0]).join('')}</div>
+          <span>${post.author}</span>
+        </div>
+        <span>📅 ${post.date}</span>
+        <span>⏱ ${post.readTime} read</span>
+      </div>
+    </div>
+    <div class="single-post-cover"><span>${post.emoji}</span></div>
+    <div class="post-body">${post.body}</div>
+    <div style="margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+      <div>
+        <div style="font-family:var(--ff-display);font-weight:700;margin-bottom:.25rem">Enjoyed this read?</div>
+        <div style="color:var(--muted);font-size:.875rem">Share it with someone who'd find it interesting.</div>
+      </div>
+      <div style="display:flex;gap:.75rem">
+        <button class="btn-outline" onclick="copyLink()">📋 Copy Link</button>
+        <button class="btn-primary" onclick="navigate('blog')">More Articles</button>
+      </div>
+    </div>`;
+
+  const prevPage = currentPage;
+  navigate('post');
+  document.querySelector('#page-post .back-btn').onclick = () => navigate(prevPage === 'post' ? 'blog' : prevPage);
+}
+
+function copyLink() {
+  navigator.clipboard?.writeText(window.location.href).catch(()=>{});
+  showToast('Link copied to clipboard!', 'success');
+}
+
+/* ====== CONTACT FORM ====== */
+function submitContact(event) {
+  event?.preventDefault?.();
+  event?.stopPropagation?.();
+  console.log('submitContact clicked');
+  const fname = document.getElementById('fname').value.trim();
+  const lname = document.getElementById('lname').value.trim();
+  const email = document.getElementById('cemail').value.trim();
+  const subject = document.getElementById('csubject').value;
+  const message = document.getElementById('cmessage').value.trim();
+
+  if (!fname || !email || !subject || !message) {
+    showToast('Please fill in all required fields.', 'error');
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('Please enter a valid email address.', 'error');
+    return;
+  }
+
+  const btn = document.querySelector('#page-contact .btn-primary');
+  if (!btn) return;
+  btn.textContent = 'Sending…';
+  btn.disabled = true;
+
+  const payload = { firstName: fname, lastName: lname, email, subject, message };
+  const endpoints = [
+    '/api/posts',
+    'http://localhost:8080/api/posts',
+    'http://127.0.0.1:8080/api/posts',
+    'http://localhost:3000/api/posts',
+    'http://localhost:5000/api/posts',
+];
+
+  const submitTo = async url => {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json().catch(() => null);
+    if (!response.ok) {
+      throw new Error(data?.message || `Submission failed (${response.status})`);
+    }
+    if (!data?.success) {
+      throw new Error(data?.message || 'Submission failed');
+    }
+    return data;
+  };
+
+  (async () => {
+    let lastError = null;
+    for (const url of endpoints) {
+      try {
+        await submitTo(url);
+        document.getElementById('contactFormInner').style.display = 'none';
+        document.getElementById('formSuccess').style.display = 'block';
+        showToast('Message sent successfully!', 'success');
+        return;
+      } catch (err) {
+        lastError = err;
+        console.warn(`Contact submission failed for ${url}:`, err);
+      }
+    }
+
+    console.error('Contact submission error:', lastError);
+    const isFileProtocol = window.location.protocol === 'file:';
+    showToast(
+      isFileProtocol
+        ? 'Unable to send message. Open the site through the local backend server and try again.'
+        : 'Unable to send message. Make sure the backend is running on localhost:3000 or localhost:5000.',
+      'error'
+    );
+    btn.textContent = 'Send Message →';
+    btn.disabled = false;
+  })();
+}
+
+/* ====== NEWSLETTER ====== */
+function subscribeNewsletter() {
+  const input = document.getElementById('newsletterEmail') || document.querySelector('.newsletter-form input');
+  const email = input?.value?.trim();
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('Please enter a valid email address.', 'error');
+    return;
+  }
+  // Simulate backend call
+  console.log('Newsletter subscription:', email);
+  if (input) input.value = '';
+  showToast('🎉 You\'re subscribed! Welcome to Bolgerr.', 'success');
+}
+
+/* ====== TOAST ====== */
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast ' + type + ' show';
+  setTimeout(() => t.className = 'toast', 3500);
+}
+
+/* ====== HAMBURGER ====== */
+function toggleMenu() {
+  document.getElementById('mobileMenu').classList.toggle('open');
+}
+
+/* ====== SCROLL EFFECTS ====== */
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 20);
+  triggerReveal();
+  animateCounters();
+});
+
+function triggerReveal() {
+  document.querySelectorAll('.reveal').forEach(el => {
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight - 60) el.classList.add('visible');
+  });
+}
+
+/* ====== COUNTER ANIMATION ====== */
+let countersStarted = false;
+function animateCounters() {
+  if (countersStarted) return;
+  const counters = document.querySelectorAll('[data-target]');
+  if (!counters.length) return;
+  const firstCounter = counters[0].getBoundingClientRect();
+  if (firstCounter.top > window.innerHeight) return;
+  countersStarted = true;
+  counters.forEach(c => {
+    const target = parseInt(c.dataset.target);
+    let current = 0;
+    const step = target / 60;
+    const timer = setInterval(() => {
+      current = Math.min(current + step, target);
+      c.textContent = Math.round(current);
+      if (current >= target) clearInterval(timer);
+    }, 16);
+  });
+}
+
+/* ====== 3D TILT EFFECT ====== */
+function initTilt(card) {
+  card.addEventListener('mousemove', e => {
+    const rect = card.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    card.style.transform = `perspective(600px) rotateX(${-y*12}deg) rotateY(${x*12}deg) translateY(-6px)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+  });
+}
+
+/* ====== 3D CUBE MOUSE INTERACTION ====== */
+function startCubeInteraction() {
+  const cube = document.querySelector('.cube');
+  if (!cube) return;
+  let animPaused = false;
+  document.querySelector('.about-3d-cube')?.addEventListener('mouseenter', () => {
+    cube.style.animationPlayState = 'paused';
+    animPaused = true;
+  });
+  document.querySelector('.about-3d-cube')?.addEventListener('mouseleave', () => {
+    cube.style.animationPlayState = 'running';
+    cube.style.transform = '';
+    animPaused = false;
+  });
+  document.querySelector('.about-3d-cube')?.addEventListener('mousemove', e => {
+    if (!animPaused) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left - rect.width/2) / (rect.width/2);
+    const y = (e.clientY - rect.top  - rect.height/2) / (rect.height/2);
+    cube.style.transform = `rotateX(${-y*40}deg) rotateY(${x*40}deg)`;
+  });
+}
+
+/* ====== 3D CANVAS BACKGROUND ====== */
+(function initCanvas() {
+  const canvas = document.getElementById('canvas3d');
+  const ctx = canvas.getContext('2d');
+  let W, H, nodes = [], animFrame;
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+
+  function createNodes(n) {
+    nodes = [];
+    for (let i=0; i<n; i++) {
+      nodes.push({
+        x: Math.random()*W, y: Math.random()*H,
+        vx: (Math.random()-.5)*.4, vy: (Math.random()-.5)*.4,
+        r: Math.random()*2.5+1,
+        hue: Math.random() > .5 ? 250 : 340,  // purple or pink
+      });
+    }
+  }
+
+  function draw() {
+    ctx.clearRect(0,0,W,H);
+
+    // Draw connections
+    for (let i=0; i<nodes.length; i++) {
+      for (let j=i+1; j<nodes.length; j++) {
+        const dx = nodes[i].x - nodes[j].x;
+        const dy = nodes[i].y - nodes[j].y;
+        const dist = Math.sqrt(dx*dx+dy*dy);
+        if (dist < 130) {
+          const alpha = (1 - dist/130) * 0.25;
+          ctx.strokeStyle = `hsla(250,60%,65%,${alpha})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(nodes[i].x, nodes[i].y);
+          ctx.lineTo(nodes[j].x, nodes[j].y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Draw nodes
+    nodes.forEach(n => {
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+      ctx.fillStyle = `hsla(${n.hue},65%,65%,0.6)`;
+      ctx.fill();
+      // Move
+      n.x += n.vx; n.y += n.vy;
+      if (n.x < 0 || n.x > W) n.vx *= -1;
+      if (n.y < 0 || n.y > H) n.vy *= -1;
+    });
+
+    animFrame = requestAnimationFrame(draw);
+  }
+
+  resize();
+  createNodes(60);
+  draw();
+  window.addEventListener('resize', () => { resize(); createNodes(60); });
+})();
+
+/* ====== FLOATING PARTICLES ====== */
+(function initParticles() {
+  const container = document.getElementById('particles');
+  const count = 20;
+  const shapes = ['◆','✦','✶','○','◇'];
+  for (let i=0; i<count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const size = Math.random()*8+4;
+    const left = Math.random()*100;
+    const dur = Math.random()*20+15;
+    const delay = Math.random()*20;
+    const opacity = Math.random()*.2+.05;
+    p.textContent = shapes[Math.floor(Math.random()*shapes.length)];
+    p.style.cssText = `left:${left}%;font-size:${size}px;animation-duration:${dur}s;animation-delay:-${delay}s;color:hsla(250,60%,65%,${opacity});position:fixed;bottom:-50px`;
+    container.appendChild(p);
+  }
+})();
+
+/* ====== INIT ====== */
+const initialPage = location.hash.replace('#','') || 'home';
+loadPosts().then(() => navigate(initialPage));
+setTimeout(triggerReveal, 500);
+
+// Handle back/forward navigation (simple hash-based)
+window.addEventListener('hashchange', () => {
+  const page = location.hash.replace('#','') || 'home';
+  if (page !== currentPage && document.getElementById('page-' + page)) {
+    navigate(page);
+  }
+});
+
+const submitButton = document.getElementById('contactSubmitButton');
+if (submitButton) {
+  submitButton.addEventListener('click', event => submitContact(event));
+}
+</script>
+</body>
+</html>

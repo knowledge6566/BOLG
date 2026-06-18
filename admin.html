@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Bolgerr Admin — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+<!-- SheetJS for Excel export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- jsPDF for PDF export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root {
+  --ink:     #0D0D0F;
+  --paper:   #F8F6F1;
+  --accent:  #5B4FE9;
+  --accent2: #E94F6A;
+  --muted:   #6B7280;
+  --border:  #E5E2DB;
+  --card:    #FFFFFF;
+  --glow:    rgba(91,79,233,0.18);
+  --success: #22c55e;
+  --danger:  #ef4444;
+  --warn:    #f59e0b;
+  --sidebar-w: 240px;
+  --ff-display: 'Syne', sans-serif;
+  --ff-body:    'Inter', sans-serif;
+  --r: 12px;
+  --shadow: 0 4px 24px rgba(13,13,15,0.08);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{font-family:var(--ff-body);background:#F0EEE9;color:var(--ink);min-height:100vh;display:flex;flex-direction:column}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;border:none;font:inherit}
+input,textarea,select{font:inherit}
+img{max-width:100%;display:block}
+
+/* ── LOGIN SCREEN ── */
+#loginScreen {
+  position:fixed;inset:0;background:var(--paper);display:flex;align-items:center;justify-content:center;z-index:9999;
+}
+.login-box {
+  background:var(--card);border:1px solid var(--border);border-radius:20px;padding:3rem 2.5rem;width:100%;max-width:400px;
+  box-shadow:0 24px 64px rgba(13,13,15,0.12);text-align:center;
+}
+.login-logo {
+  font-family:var(--ff-display);font-size:2rem;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  margin-bottom:.25rem;
+}
+.login-sub { color:var(--muted);font-size:.875rem;margin-bottom:2rem; }
+.login-box label { display:block;font-size:.75rem;font-family:var(--ff-display);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;text-align:left; }
+.login-box input { width:100%;padding:.8rem 1rem;border:1.5px solid var(--border);border-radius:8px;font-size:.9rem;color:var(--ink);background:var(--paper);outline:none;margin-bottom:1rem;transition:border-color .2s; }
+.login-box input:focus { border-color:var(--accent); }
+.login-btn { width:100%;padding:.9rem;background:var(--accent);color:#fff;border-radius:40px;font-family:var(--ff-display);font-weight:700;font-size:.95rem;letter-spacing:.02em;transition:transform .2s,box-shadow .2s; }
+.login-btn:hover { transform:translateY(-2px);box-shadow:0 8px 24px var(--glow); }
+.login-err { color:var(--danger);font-size:.82rem;margin-top:.5rem;min-height:1.2rem; }
+.login-back { margin-top:1.5rem;color:var(--muted);font-size:.82rem; }
+.login-back a { color:var(--accent);font-weight:600; }
+
+/* ── APP SHELL ── */
+#appShell { display:none;flex:1;min-height:100vh; }
+#appShell.visible { display:flex; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width:var(--sidebar-w);min-height:100vh;background:var(--ink);color:#fff;
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;
+}
+.sidebar-logo {
+  padding:1.75rem 1.5rem 1.25rem;font-family:var(--ff-display);font-size:1.3rem;font-weight:800;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.sidebar-logo span { display:block;font-size:.65rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:.15rem;-webkit-text-fill-color:rgba(255,255,255,.35); }
+.sidebar-nav { flex:1;padding:1rem 0; }
+.sidebar-section { padding:.25rem 1.25rem .5rem;font-size:.65rem;font-family:var(--ff-display);font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.25);margin-top:.75rem; }
+.nav-item {
+  display:flex;align-items:center;gap:.75rem;padding:.65rem 1.5rem;font-size:.875rem;font-family:var(--ff-display);font-weight:600;
+  color:rgba(255,255,255,.55);cursor:pointer;transition:all .2s;border-left:3px solid transparent;
+}
+.nav-item:hover { color:#fff;background:rgba(255,255,255,.05);border-left-color:rgba(255,255,255,.2); }
+.nav-item.active { color:#fff;background:rgba(91,79,233,.25);border-left-color:var(--accent); }
+.nav-item .icon { width:18px;text-align:center;font-size:1rem; }
+.sidebar-bottom { padding:1.5rem;border-top:1px solid rgba(255,255,255,.07); }
+.logout-btn { width:100%;padding:.6rem 1rem;background:rgba(233,79,106,.15);color:var(--accent2);border-radius:8px;font-family:var(--ff-display);font-weight:700;font-size:.82rem;transition:all .2s; }
+.logout-btn:hover { background:rgba(233,79,106,.25); }
+
+/* ── MAIN CONTENT ── */
+.main { margin-left:var(--sidebar-w);flex:1;padding:0;min-height:100vh;display:flex;flex-direction:column; }
+.topbar {
+  background:var(--card);border-bottom:1px solid var(--border);padding:1rem 2rem;
+  display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;
+}
+.topbar-title { font-family:var(--ff-display);font-size:1.1rem;font-weight:800; }
+.topbar-meta { font-size:.8rem;color:var(--muted); }
+.topbar-right { display:flex;align-items:center;gap:1rem; }
+.view-site-btn {
+  padding:.45rem 1rem;border:1.5px solid var(--border);border-radius:40px;font-family:var(--ff-display);font-weight:700;font-size:.78rem;
+  color:var(--muted);transition:all .2s;
+}
+.view-site-btn:hover { border-color:var(--accent);color:var(--accent); }
+
+.content { padding:2rem;flex:1; }
+
+/* ── PANELS ── */
+.panel { display:none; }
+.panel.active { display:block; }
+
+/* ── STAT CARDS ── */
+.stats-row { display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1rem;margin-bottom:2rem; }
+.stat-card {
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;
+}
+.stat-card-label { font-size:.72rem;font-family:var(--ff-display);font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem; }
+.stat-card-value { font-family:var(--ff-display);font-size:2rem;font-weight:800; }
+.stat-card-value.accent { background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+.stat-card-sub { font-size:.75rem;color:var(--muted);margin-top:.25rem; }
+
+/* ── SECTION HEADER ── */
+.section-hdr { display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem; }
+.section-hdr h2 { font-family:var(--ff-display);font-size:1.15rem;font-weight:800; }
+
+/* ── BUTTONS ── */
+.btn { display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.1rem;border-radius:8px;font-family:var(--ff-display);font-weight:700;font-size:.82rem;transition:all .2s;cursor:pointer;border:none; }
+.btn-primary { background:var(--accent);color:#fff; }
+.btn-primary:hover { background:#4a3fd8;box-shadow:0 4px 14px var(--glow); }
+.btn-success { background:var(--success);color:#fff; }
+.btn-success:hover { background:#16a34a; }
+.btn-danger { background:var(--danger);color:#fff; }
+.btn-danger:hover { background:#dc2626; }
+.btn-ghost { background:transparent;border:1.5px solid var(--border);color:var(--muted); }
+.btn-ghost:hover { border-color:var(--accent);color:var(--accent); }
+.btn-warn { background:var(--warn);color:#fff; }
+.btn-sm { padding:.35rem .75rem;font-size:.75rem; }
+
+/* ── TABLE ── */
+.table-wrap { background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden; }
+.table-toolbar { padding:1rem 1.25rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.75rem;flex-wrap:wrap; }
+.search-input {
+  flex:1;min-width:180px;padding:.55rem .9rem;border:1.5px solid var(--border);border-radius:8px;font-size:.875rem;
+  color:var(--ink);background:var(--paper);outline:none;transition:border-color .2s;
+}
+.search-input:focus { border-color:var(--accent); }
+table { width:100%;border-collapse:collapse; }
+th { padding:.75rem 1rem;text-align:left;font-size:.7rem;font-family:var(--ff-display);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:#FAFAF8;border-bottom:1px solid var(--border); }
+td { padding:.85rem 1rem;font-size:.85rem;border-bottom:1px solid var(--border);vertical-align:middle; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:rgba(91,79,233,.03); }
+.badge { display:inline-block;padding:.2rem .6rem;border-radius:40px;font-size:.68rem;font-family:var(--ff-display);font-weight:700; }
+.badge-unread { background:rgba(91,79,233,.12);color:var(--accent); }
+.badge-read { background:rgba(107,114,128,.1);color:var(--muted); }
+.badge-pub { background:rgba(34,197,94,.12);color:#16a34a; }
+.badge-draft { background:rgba(245,158,11,.12);color:#d97706; }
+
+/* ── CONTACTS TABLE ── */
+.msg-preview { color:var(--muted);font-size:.8rem;max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.contact-name { font-weight:600;font-family:var(--ff-display);font-size:.875rem; }
+.contact-email { font-size:.78rem;color:var(--muted); }
+
+/* ── EXPORT ACTIONS BAR ── */
+.export-bar {
+  background:linear-gradient(135deg,rgba(91,79,233,.07),rgba(233,79,106,.05));
+  border:1px solid rgba(91,79,233,.15);border-radius:var(--r);padding:1.25rem 1.5rem;
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;
+  margin-bottom:1.5rem;
+}
+.export-bar-left h3 { font-family:var(--ff-display);font-size:.95rem;font-weight:800;margin-bottom:.15rem; }
+.export-bar-left p { font-size:.8rem;color:var(--muted); }
+.export-btns { display:flex;gap:.6rem;flex-wrap:wrap; }
+
+/* ── BLOG EDITOR ── */
+.editor-wrap { display:grid;grid-template-columns:1fr 340px;gap:1.5rem;align-items:start; }
+.editor-main { background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden; }
+.editor-toolbar {
+  display:flex;align-items:center;gap:.25rem;padding:.6rem .75rem;background:#FAFAF8;border-bottom:1px solid var(--border);flex-wrap:wrap;
+}
+.tool-btn {
+  padding:.3rem .55rem;border-radius:5px;border:none;background:transparent;cursor:pointer;font-size:.85rem;
+  color:var(--muted);transition:all .15s;font-family:var(--ff-display);font-weight:700;
+}
+.tool-btn:hover { background:rgba(91,79,233,.1);color:var(--accent); }
+.tool-btn.active { background:var(--accent);color:#fff; }
+.tool-sep { width:1px;height:20px;background:var(--border);margin:0 .25rem; }
+#editorBody {
+  min-height:380px;padding:1.5rem;outline:none;font-size:.95rem;line-height:1.8;
+  color:var(--ink);
+}
+#editorBody:empty::before { content:'Start writing your post…';color:var(--muted); }
+#editorBody h2 { font-family:var(--ff-display);font-size:1.4rem;font-weight:800;margin:1.5rem 0 .5rem; }
+#editorBody h3 { font-family:var(--ff-display);font-size:1.1rem;font-weight:700;margin:1rem 0 .4rem;color:var(--accent); }
+#editorBody blockquote { border-left:4px solid var(--accent);padding:.75rem 1.25rem;margin:1rem 0;background:rgba(91,79,233,.05);border-radius:0 8px 8px 0;font-style:italic; }
+#editorBody ul,#editorBody ol { padding-left:1.5rem;margin:.5rem 0; }
+#editorBody p { margin-bottom:.75rem; }
+#editorBody a { color:var(--accent);text-decoration:underline; }
+
+.editor-sidebar { display:flex;flex-direction:column;gap:1rem; }
+.editor-card { background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem; }
+.editor-card h3 { font-family:var(--ff-display);font-size:.85rem;font-weight:800;margin-bottom:1rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em; }
+.field { margin-bottom:1rem; }
+.field label { display:block;font-size:.72rem;font-family:var(--ff-display);font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem; }
+.field input,.field select,.field textarea { width:100%;padding:.65rem .85rem;border:1.5px solid var(--border);border-radius:8px;font-size:.875rem;color:var(--ink);background:var(--paper);outline:none;transition:border-color .2s; }
+.field input:focus,.field select:focus,.field textarea:focus { border-color:var(--accent); }
+.field textarea { height:80px;resize:vertical; }
+.emoji-pick { display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem; }
+.emoji-pick span { font-size:1.3rem;cursor:pointer;padding:.2rem;border-radius:4px;transition:background .15s; }
+.emoji-pick span:hover { background:rgba(91,79,233,.1); }
+.emoji-pick span.selected { background:rgba(91,79,233,.2);outline:2px solid var(--accent); }
+.publish-btn { width:100%;padding:.8rem;background:var(--accent);color:#fff;border-radius:8px;font-family:var(--ff-display);font-weight:700;font-size:.9rem;transition:all .2s; }
+.publish-btn:hover { background:#4a3fd8;box-shadow:0 4px 14px var(--glow); }
+.save-draft-btn { width:100%;padding:.65rem;background:transparent;border:1.5px solid var(--border);border-radius:8px;font-family:var(--ff-display);font-weight:700;font-size:.82rem;color:var(--muted);margin-top:.5rem;transition:all .2s; }
+.save-draft-btn:hover { border-color:var(--accent);color:var(--accent); }
+
+/* ── POSTS LIST ── */
+.posts-list { display:flex;flex-direction:column;gap:.75rem; }
+.post-row {
+  background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1rem 1.25rem;
+  display:flex;align-items:center;gap:1rem;
+}
+.post-row-emoji { font-size:1.5rem;flex-shrink:0;width:40px;text-align:center; }
+.post-row-info { flex:1;min-width:0; }
+.post-row-title { font-family:var(--ff-display);font-weight:700;font-size:.95rem;margin-bottom:.2rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.post-row-meta { font-size:.75rem;color:var(--muted); }
+.post-row-actions { display:flex;gap:.5rem;flex-shrink:0; }
+
+/* ── MODAL ── */
+.modal-overlay { position:fixed;inset:0;background:rgba(13,13,15,.5);z-index:500;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .2s; }
+.modal-overlay.open { opacity:1;pointer-events:all; }
+.modal { background:var(--card);border-radius:16px;padding:2rem;max-width:480px;width:90%;box-shadow:0 24px 80px rgba(13,13,15,.2); }
+.modal h2 { font-family:var(--ff-display);font-size:1.2rem;font-weight:800;margin-bottom:.75rem; }
+.modal p { color:var(--muted);font-size:.9rem;margin-bottom:1.5rem; }
+.modal-actions { display:flex;gap:.75rem;justify-content:flex-end; }
+
+/* ── CONTACT DETAIL MODAL ── */
+.contact-detail-modal .field-group { margin-bottom:1.25rem; }
+.contact-detail-modal .field-label { font-size:.7rem;font-family:var(--ff-display);font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:.25rem; }
+.contact-detail-modal .field-value { font-size:.9rem;font-weight:500; }
+.msg-box { background:var(--paper);border:1px solid var(--border);border-radius:8px;padding:1rem;font-size:.875rem;line-height:1.7;color:var(--ink);margin-top:.25rem; }
+
+/* ── TOAST ── */
+.toast-admin { position:fixed;bottom:1.5rem;right:1.5rem;background:var(--ink);color:#fff;padding:.85rem 1.25rem;border-radius:10px;font-family:var(--ff-display);font-weight:600;font-size:.82rem;transform:translateY(80px);opacity:0;transition:all .35s cubic-bezier(.34,1.56,.64,1);z-index:9999;max-width:280px; }
+.toast-admin.show { transform:translateY(0);opacity:1; }
+.toast-admin.success { border-left:3px solid var(--success); }
+.toast-admin.error   { border-left:3px solid var(--danger); }
+.toast-admin.info    { border-left:3px solid var(--accent); }
+
+/* ── EMPTY STATE ── */
+.empty-state { text-align:center;padding:4rem 2rem;color:var(--muted); }
+.empty-state .icon { font-size:3rem;margin-bottom:1rem;opacity:.4; }
+.empty-state p { font-size:.9rem; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .sidebar { transform:translateX(-100%);transition:transform .3s; }
+  .sidebar.open { transform:translateX(0); }
+  .main { margin-left:0; }
+  .editor-wrap { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOAST ── -->
+<div class="toast-admin" id="adminToast"></div>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">Bolgerr</div>
+    <div class="login-sub">Admin Dashboard — sign in to continue</div>
+    <div>
+      <label>Username</label>
+      <input type="text" id="loginUser" placeholder="admin" autocomplete="username"/>
+    </div>
+    <div>
+      <label>Password</label>
+      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign In →</button>
+    <div class="login-err" id="loginErr"></div>
+    <div class="login-back">← <a href="index.html">Back to Bolgerr</a></div>
+  </div>
+</div>
+
+<!-- ══════════ APP SHELL ══════════ -->
+<div id="appShell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">Bolgerr <span>Admin Panel</span></div>
+    <nav class="sidebar-nav">
+      <div class="sidebar-section">Overview</div>
+      <div class="nav-item active" onclick="showPanel('dashboard')" data-panel="dashboard">
+        <span class="icon">📊</span> Dashboard
+      </div>
+      <div class="sidebar-section">Content</div>
+      <div class="nav-item" onclick="showPanel('posts')" data-panel="posts">
+        <span class="icon">📝</span> All Posts
+      </div>
+      <div class="nav-item" onclick="showPanel('new-post')" data-panel="new-post">
+        <span class="icon">✏️</span> New Post
+      </div>
+      <div class="sidebar-section">Audience</div>
+      <div class="nav-item" onclick="showPanel('contacts')" data-panel="contacts">
+        <span class="icon">💬</span> Messages
+        <span id="unreadBadge" style="margin-left:auto;background:var(--accent2);color:#fff;font-size:.6rem;padding:.15rem .45rem;border-radius:40px;font-family:var(--ff-display);font-weight:700;display:none"></span>
+      </div>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbarTitle">Dashboard</div>
+        <div class="topbar-meta" id="topbarMeta">Welcome back</div>
+      </div>
+      <div class="topbar-right">
+        <a href="index.html" class="view-site-btn" target="_blank">↗ View Site</a>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="panel active" id="panel-dashboard">
+        <div class="stats-row" id="dashStats"></div>
+        <div class="section-hdr">
+          <h2>Recent Messages</h2>
+          <button class="btn btn-ghost btn-sm" onclick="showPanel('contacts')">View all →</button>
+        </div>
+        <div class="table-wrap" id="dashRecentMessages"></div>
+        <div style="margin-top:1.5rem" class="section-hdr">
+          <h2>Recent Posts</h2>
+          <button class="btn btn-ghost btn-sm" onclick="showPanel('posts')">Manage →</button>
+        </div>
+        <div id="dashRecentPosts" class="posts-list"></div>
+      </div>
+
+      <!-- ── POSTS ── -->
+      <div class="panel" id="panel-posts">
+        <div class="section-hdr">
+          <h2>All Posts</h2>
+          <button class="btn btn-primary" onclick="showPanel('new-post')">+ New Post</button>
+        </div>
+        <div class="posts-list" id="postsListEl"></div>
+      </div>
+
+      <!-- ── NEW / EDIT POST ── -->
+      <div class="panel" id="panel-new-post">
+        <div class="section-hdr">
+          <h2 id="editorHeading">New Post</h2>
+          <div style="display:flex;gap:.6rem">
+            <button class="btn btn-ghost btn-sm" onclick="cancelEdit()">Cancel</button>
+          </div>
+        </div>
+        <div class="editor-wrap">
+          <!-- Rich text editor -->
+          <div class="editor-main">
+            <div class="editor-toolbar">
+              <button class="tool-btn" onclick="fmt('bold')" title="Bold"><b>B</b></button>
+              <button class="tool-btn" onclick="fmt('italic')" title="Italic"><i>I</i></button>
+              <button class="tool-btn" onclick="fmt('underline')" title="Underline"><u>U</u></button>
+              <div class="tool-sep"></div>
+              <button class="tool-btn" onclick="fmtBlock('h2')" title="Heading 2">H2</button>
+              <button class="tool-btn" onclick="fmtBlock('h3')" title="Heading 3">H3</button>
+              <button class="tool-btn" onclick="fmtBlock('p')" title="Paragraph">¶</button>
+              <div class="tool-sep"></div>
+              <button class="tool-btn" onclick="fmt('insertUnorderedList')" title="Bullet list">• List</button>
+              <button class="tool-btn" onclick="fmt('insertOrderedList')" title="Numbered list">1. List</button>
+              <div class="tool-sep"></div>
+              <button class="tool-btn" onclick="fmtBlock('blockquote')" title="Blockquote">❝</button>
+              <button class="tool-btn" onclick="insertLink()" title="Insert link">🔗</button>
+              <div class="tool-sep"></div>
+              <button class="tool-btn" onclick="fmt('removeFormat')" title="Clear formatting">✕ Fmt</button>
+            </div>
+            <div id="editorBody" contenteditable="true" spellcheck="true"></div>
+          </div>
+
+          <!-- Sidebar fields -->
+          <div class="editor-sidebar">
+            <div class="editor-card">
+              <h3>Publish</h3>
+              <button class="publish-btn" onclick="publishPost()">🚀 Publish Post</button>
+              <button class="save-draft-btn" onclick="saveDraft()">Save as Draft</button>
+            </div>
+            <div class="editor-card">
+              <h3>Post Details</h3>
+              <div class="field">
+                <label>Title *</label>
+                <input type="text" id="postTitle" placeholder="Your post title…"/>
+              </div>
+              <div class="field">
+                <label>Excerpt *</label>
+                <textarea id="postExcerpt" placeholder="A short summary shown in cards…"></textarea>
+              </div>
+              <div class="field">
+                <label>Author</label>
+                <input type="text" id="postAuthor" placeholder="Author name"/>
+              </div>
+              <div class="field">
+                <label>Read Time</label>
+                <input type="text" id="postReadTime" placeholder="e.g. 5 min"/>
+              </div>
+            </div>
+            <div class="editor-card">
+              <h3>Categorise</h3>
+              <div class="field">
+                <label>Category</label>
+                <select id="postCategory">
+                  <option value="Technology">Technology</option>
+                  <option value="Design">Design</option>
+                  <option value="Culture">Culture</option>
+                  <option value="Science">Science</option>
+                  <option value="Life">Life</option>
+                  <option value="Business">Business</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>Emoji Icon</label>
+                <input type="text" id="postEmoji" placeholder="📝" maxlength="4"/>
+                <div class="emoji-pick" id="emojiPick">
+                  <span onclick="pickEmoji('📝')">📝</span>
+                  <span onclick="pickEmoji('🤖')">🤖</span>
+                  <span onclick="pickEmoji('💡')">💡</span>
+                  <span onclick="pickEmoji('🎨')">🎨</span>
+                  <span onclick="pickEmoji('☕')">☕</span>
+                  <span onclick="pickEmoji('🚀')">🚀</span>
+                  <span onclick="pickEmoji('🧬')">🧬</span>
+                  <span onclick="pickEmoji('💼')">💼</span>
+                  <span onclick="pickEmoji('🌍')">🌍</span>
+                  <span onclick="pickEmoji('⚡')">⚡</span>
+                  <span onclick="pickEmoji('📖')">📖</span>
+                  <span onclick="pickEmoji('🏗️')">🏗️</span>
+                </div>
+              </div>
+              <div class="field" style="display:flex;align-items:center;gap:.6rem;margin-bottom:0">
+                <input type="checkbox" id="postFeatured" style="width:auto;margin:0"/>
+                <label for="postFeatured" style="margin:0;text-transform:none;letter-spacing:0;font-size:.875rem;cursor:pointer">Featured post</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- hidden edit id -->
+        <input type="hidden" id="editPostId" value=""/>
+      </div>
+
+      <!-- ── CONTACTS / MESSAGES ── -->
+      <div class="panel" id="panel-contacts">
+        <div class="export-bar">
+          <div class="export-bar-left">
+            <h3>📥 Export Contact Messages</h3>
+            <p id="exportCount">Loading messages…</p>
+          </div>
+          <div class="export-btns">
+            <button class="btn btn-success" onclick="exportExcel()">⬇ Excel (.xlsx)</button>
+            <button class="btn btn-danger" onclick="exportPDF()">⬇ PDF</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-toolbar">
+            <input class="search-input" type="text" placeholder="Search messages…" id="contactSearch" oninput="renderContacts()"/>
+            <select id="contactFilter" onchange="renderContacts()" style="padding:.5rem .75rem;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;color:var(--muted);background:var(--paper);cursor:pointer;outline:none">
+              <option value="all">All messages</option>
+              <option value="unread">Unread only</option>
+              <option value="read">Read only</option>
+            </select>
+            <button class="btn btn-ghost btn-sm" onclick="markAllRead()">✓ Mark all read</button>
+          </div>
+          <div id="contactsTable"></div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div>
+
+<!-- ── CONTACT DETAIL MODAL ── -->
+<div class="modal-overlay" id="contactModal">
+  <div class="modal contact-detail-modal" style="max-width:560px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem">
+      <h2 id="modalContactName"></h2>
+      <button onclick="closeModal('contactModal')" style="font-size:1.2rem;color:var(--muted);background:none;border:none;cursor:pointer">✕</button>
+    </div>
+    <div id="modalContactBody"></div>
+    <div class="modal-actions" style="margin-top:1.5rem">
+      <button class="btn btn-ghost" onclick="closeModal('contactModal')">Close</button>
+      <button class="btn btn-primary" id="modalReplyBtn">✉ Reply by Email</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── DELETE POST MODAL ── -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <h2>Delete this post?</h2>
+    <p>This will archive the post and it will no longer appear on the site. You can restore it from the server if needed.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════
+//  CONFIG — change these!
+// ══════════════════════════════════
+const ADMIN_USER = 'shubh';
+const ADMIN_PASS = 'shubh2025';  // ← change this
+
+// API base — tries localhost:3000, adjust if different port
+const API = 'http://localhost:3000';
+
+// ══════════════════════════════════
+//  AUTH
+// ══════════════════════════════════
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginErr');
+  if (u === ADMIN_USER && p === ADMIN_PASS) {
+    sessionStorage.setItem('bolgerr_admin', '1');
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appShell').classList.add('visible');
+    initApp();
+  } else {
+    err.textContent = 'Incorrect username or password.';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem('bolgerr_admin');
+  location.reload();
+}
+
+// Auto-login if session exists
+if (sessionStorage.getItem('bolgerr_admin')) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').classList.add('visible');
+  window.addEventListener('DOMContentLoaded', initApp);
+}
+
+// ══════════════════════════════════
+//  PANEL NAVIGATION
+// ══════════════════════════════════
+const panelMeta = {
+  'dashboard':  { title:'Dashboard',   meta:'Overview of your blog' },
+  'posts':      { title:'All Posts',   meta:'Manage your content' },
+  'new-post':   { title:'New Post',    meta:'Rich text editor' },
+  'contacts':   { title:'Messages',    meta:'Contact form submissions' },
+};
+
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const panel = document.getElementById('panel-' + id);
+  if (panel) panel.classList.add('active');
+  const nav = document.querySelector(`[data-panel="${id}"]`);
+  if (nav) nav.classList.add('active');
+  const meta = panelMeta[id] || {};
+  document.getElementById('topbarTitle').textContent = meta.title || id;
+  document.getElementById('topbarMeta').textContent = meta.meta || '';
+
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'posts') renderPosts();
+  if (id === 'contacts') renderContacts();
+  if (id === 'new-post') {
+    // fresh post
+    if (!document.getElementById('editPostId').value) resetEditor();
+  }
+}
+
+// ══════════════════════════════════
+//  DATA LAYER (API + fallback)
+// ══════════════════════════════════
+let allPosts    = [];
+let allContacts = [];
+
+async function fetchPosts() {
+  try {
+    const res = await fetch(`${API}/api/posts?published=all`);
+    const data = await res.json();
+    // The API only returns published, so try direct
+    allPosts = data.data || [];
+    // Also include unpublished via a different endpoint if available
+    return allPosts;
+  } catch {
+    // fallback to embedded POSTS array if server not available
+    return allPosts;
+  }
+}
+
+async function fetchAllPosts() {
+  // Try to get ALL posts including unpublished
+  try {
+    const res = await fetch(`${API}/api/posts`);
+    const data = await res.json();
+    allPosts = data.data || [];
+  } catch {
+    allPosts = [];
+  }
+  return allPosts;
+}
+
+async function fetchContacts() {
+  try {
+    const res = await fetch(`${API}/api/contacts`);
+    if (res.ok) {
+      const data = await res.json();
+      allContacts = data.data || [];
+      return allContacts;
+    }
+  } catch {}
+  // Try contacts.json directly (dev fallback)
+  try {
+    const res = await fetch('./data/contacts.json');
+    if (res.ok) { allContacts = await res.json(); return allContacts; }
+  } catch {}
+  return allContacts;
+}
+
+// ══════════════════════════════════
+//  INIT
+// ══════════════════════════════════
+async function initApp() {
+  await Promise.all([fetchAllPosts(), fetchContacts()]);
+  updateUnreadBadge();
+  renderDashboard();
+}
+
+function updateUnreadBadge() {
+  const unread = allContacts.filter(c => !c.read).length;
+  const badge = document.getElementById('unreadBadge');
+  if (unread > 0) { badge.textContent = unread; badge.style.display = 'inline-block'; }
+  else { badge.style.display = 'none'; }
+}
+
+// ══════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════
+function renderDashboard() {
+  const totalViews = allPosts.reduce((s,p)=>s+(p.views||0),0);
+  const unread = allContacts.filter(c=>!c.read).length;
+  document.getElementById('dashStats').innerHTML = `
+    <div class="stat-card"><div class="stat-card-label">Total Posts</div><div class="stat-card-value accent">${allPosts.length}</div><div class="stat-card-sub">Published articles</div></div>
+    <div class="stat-card"><div class="stat-card-label">Total Views</div><div class="stat-card-value accent">${totalViews.toLocaleString()}</div><div class="stat-card-sub">Across all posts</div></div>
+    <div class="stat-card"><div class="stat-card-label">Messages</div><div class="stat-card-value accent">${allContacts.length}</div><div class="stat-card-sub">${unread} unread</div></div>
+    <div class="stat-card"><div class="stat-card-label">Featured</div><div class="stat-card-value accent">${allPosts.filter(p=>p.featured).length}</div><div class="stat-card-sub">Featured posts</div></div>
+  `;
+
+  // Recent messages (last 5)
+  const recent = [...allContacts].reverse().slice(0,5);
+  if (recent.length === 0) {
+    document.getElementById('dashRecentMessages').innerHTML = '<div class="empty-state"><div class="icon">💬</div><p>No messages yet</p></div>';
+  } else {
+    document.getElementById('dashRecentMessages').innerHTML = buildContactTable(recent, true);
+  }
+
+  // Recent posts (last 3)
+  const recentPosts = [...allPosts].slice(0,3);
+  const rpEl = document.getElementById('dashRecentPosts');
+  if (recentPosts.length === 0) {
+    rpEl.innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>No posts yet</p></div>';
+  } else {
+    rpEl.innerHTML = recentPosts.map(p => buildPostRow(p)).join('');
+  }
+}
+
+// ══════════════════════════════════
+//  POSTS
+// ══════════════════════════════════
+function renderPosts() {
+  const el = document.getElementById('postsListEl');
+  if (allPosts.length === 0) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📝</div><p>No posts yet. <a href="#" onclick="showPanel(\'new-post\')" style="color:var(--accent)">Create one!</a></p></div>';
+    return;
+  }
+  el.innerHTML = allPosts.map(p => buildPostRow(p)).join('');
+}
+
+function buildPostRow(post) {
+  return `<div class="post-row">
+    <div class="post-row-emoji">${post.emoji||'📄'}</div>
+    <div class="post-row-info">
+      <div class="post-row-title">${escHtml(post.title)}</div>
+      <div class="post-row-meta">${post.category} · ${post.date} · ${(post.views||0).toLocaleString()} views
+        &nbsp;<span class="badge ${post.published!==false?'badge-pub':'badge-draft'}">${post.published!==false?'Published':'Draft'}</span>
+        ${post.featured?'<span class="badge" style="background:rgba(233,79,106,.12);color:var(--accent2)">⭐ Featured</span>':''}
+      </div>
+    </div>
+    <div class="post-row-actions">
+      <button class="btn btn-ghost btn-sm" onclick="editPost(${post.id})">✏️ Edit</button>
+      <button class="btn btn-danger btn-sm" onclick="promptDelete(${post.id})">🗑</button>
+    </div>
+  </div>`;
+}
+
+// ── EDITOR ──────────────────────
+let editingPostId = null;
+
+function resetEditor() {
+  document.getElementById('editorBody').innerHTML = '';
+  document.getElementById('postTitle').value = '';
+  document.getElementById('postExcerpt').value = '';
+  document.getElementById('postAuthor').value = '';
+  document.getElementById('postReadTime').value = '5 min';
+  document.getElementById('postCategory').value = 'Technology';
+  document.getElementById('postEmoji').value = '📝';
+  document.getElementById('postFeatured').checked = false;
+  document.getElementById('editPostId').value = '';
+  document.getElementById('editorHeading').textContent = 'New Post';
+  editingPostId = null;
+  pickEmoji('📝');
+}
+
+function cancelEdit() {
+  resetEditor();
+  showPanel('posts');
+}
+
+function editPost(id) {
+  const post = allPosts.find(p => p.id === id);
+  if (!post) return;
+  editingPostId = id;
+  document.getElementById('editPostId').value = id;
+  document.getElementById('editorHeading').textContent = 'Edit Post';
+  document.getElementById('postTitle').value = post.title || '';
+  document.getElementById('postExcerpt').value = post.excerpt || '';
+  document.getElementById('postAuthor').value = post.author || '';
+  document.getElementById('postReadTime').value = post.readTime || '5 min';
+  document.getElementById('postCategory').value = post.category || 'Technology';
+  document.getElementById('postEmoji').value = post.emoji || '📝';
+  document.getElementById('postFeatured').checked = !!post.featured;
+  document.getElementById('editorBody').innerHTML = post.body || '';
+  pickEmoji(post.emoji || '📝');
+  showPanel('new-post');
+}
+
+function getEditorData(published = true) {
+  const title   = document.getElementById('postTitle').value.trim();
+  const excerpt = document.getElementById('postExcerpt').value.trim();
+  const author  = document.getElementById('postAuthor').value.trim() || 'Anonymous';
+  const readTime= document.getElementById('postReadTime').value.trim() || '5 min';
+  const category= document.getElementById('postCategory').value;
+  const emoji   = document.getElementById('postEmoji').value.trim() || '📝';
+  const featured= document.getElementById('postFeatured').checked;
+  const body    = document.getElementById('editorBody').innerHTML;
+  return { title, excerpt, author, readTime, category, emoji, featured, body, published };
+}
+
+async function publishPost() {
+  const data = getEditorData(true);
+  if (!data.title || !data.excerpt) { showToastA('Title and excerpt are required.','error'); return; }
+  await savePost(data);
+}
+
+async function saveDraft() {
+  const data = getEditorData(false);
+  if (!data.title) { showToastA('Title is required.','error'); return; }
+  await savePost(data);
+}
+
+async function savePost(payload) {
+  const id = document.getElementById('editPostId').value;
+  try {
+    let res, result;
+    if (id) {
+      res = await fetch(`${API}/api/posts/${id}`, {
+        method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+      });
+    } else {
+      res = await fetch(`${API}/api/posts`, {
+        method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)
+      });
+    }
+    result = await res.json();
+    if (result.success) {
+      showToastA(id ? '✅ Post updated!' : '🚀 Post published!', 'success');
+      await fetchAllPosts();
+      resetEditor();
+      showPanel('posts');
+    } else {
+      showToastA(result.message || 'Failed to save post.', 'error');
+    }
+  } catch (e) {
+    showToastA('Cannot reach server. Make sure backend is running.', 'error');
+  }
+}
+
+// ── DELETE ─────────────────────
+let pendingDeleteId = null;
+function promptDelete(id) {
+  pendingDeleteId = id;
+  document.getElementById('deleteModal').classList.add('open');
+  document.getElementById('confirmDeleteBtn').onclick = confirmDelete;
+}
+
+async function confirmDelete() {
+  if (!pendingDeleteId) return;
+  try {
+    const res = await fetch(`${API}/api/posts/${pendingDeleteId}`, { method:'DELETE' });
+    const data = await res.json();
+    if (data.success) {
+      showToastA('Post archived.','success');
+      await fetchAllPosts();
+      renderPosts();
+    } else { showToastA('Delete failed.','error'); }
+  } catch { showToastA('Cannot reach server.','error'); }
+  closeModal('deleteModal');
+  pendingDeleteId = null;
+}
+
+// ── RICH TEXT FORMAT ───────────
+function fmt(cmd, val = null) {
+  document.getElementById('editorBody').focus();
+  document.execCommand(cmd, false, val);
+}
+function fmtBlock(tag) {
+  document.getElementById('editorBody').focus();
+  document.execCommand('formatBlock', false, tag);
+}
+function insertLink() {
+  const url = prompt('Enter URL:');
+  if (url) fmt('createLink', url);
+}
+function pickEmoji(e) {
+  document.getElementById('postEmoji').value = e;
+  document.querySelectorAll('.emoji-pick span').forEach(s => {
+    s.classList.toggle('selected', s.textContent === e);
+  });
+}
+
+// ══════════════════════════════════
+//  CONTACTS
+// ══════════════════════════════════
+function renderContacts() {
+  const search = (document.getElementById('contactSearch')?.value || '').toLowerCase();
+  const filter = document.getElementById('contactFilter')?.value || 'all';
+  let list = [...allContacts].reverse();
+  if (filter === 'unread') list = list.filter(c => !c.read);
+  if (filter === 'read')   list = list.filter(c => c.read);
+  if (search) list = list.filter(c =>
+    (c.firstName+' '+c.lastName+' '+c.email+' '+c.subject+' '+c.message).toLowerCase().includes(search)
+  );
+  document.getElementById('exportCount').textContent = `${allContacts.length} total messages · ${list.length} shown`;
+  document.getElementById('contactsTable').innerHTML = buildContactTable(list, false);
+}
+
+function buildContactTable(list, compact) {
+  if (list.length === 0) return '<div class="empty-state"><div class="icon">💬</div><p>No messages found</p></div>';
+  return `<table>
+    <thead><tr>
+      <th>Name</th><th>Email</th><th>Subject</th>${compact?'':'<th>Message</th>'}
+      <th>Received</th><th>Status</th><th></th>
+    </tr></thead>
+    <tbody>
+      ${list.map(c=>`<tr>
+        <td><div class="contact-name">${escHtml(c.firstName)} ${escHtml(c.lastName||'')}</div></td>
+        <td><div class="contact-email">${escHtml(c.email)}</div></td>
+        <td>${escHtml(c.subject||'')}</td>
+        ${compact?'':'<td><div class="msg-preview">${escHtml(c.message||"")}</div></td>'}
+        <td style="font-size:.78rem;color:var(--muted)">${fmtDate(c.receivedAt)}</td>
+        <td><span class="badge ${c.read?'badge-read':'badge-unread'}">${c.read?'Read':'New'}</span></td>
+        <td><button class="btn btn-ghost btn-sm" onclick="openContact(${c.id})">View</button></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function openContact(id) {
+  const c = allContacts.find(x => x.id === id);
+  if (!c) return;
+  // Mark as read locally
+  c.read = true;
+  updateUnreadBadge();
+  renderContacts();
+  // Try to persist read status
+  fetch(`${API}/api/contacts/${id}/read`, { method:'PATCH' }).catch(()=>{});
+
+  document.getElementById('modalContactName').textContent = `${c.firstName} ${c.lastName||''}`;
+  document.getElementById('modalContactBody').innerHTML = `
+    <div class="field-group"><div class="field-label">Email</div><div class="field-value">${escHtml(c.email)}</div></div>
+    <div class="field-group"><div class="field-label">Subject</div><div class="field-value">${escHtml(c.subject||'—')}</div></div>
+    <div class="field-group"><div class="field-label">Received</div><div class="field-value">${fmtDate(c.receivedAt)}</div></div>
+    <div class="field-group"><div class="field-label">Message</div><div class="msg-box">${escHtml(c.message||'')}</div></div>
+  `;
+  document.getElementById('modalReplyBtn').onclick = () => {
+    window.open(`mailto:${encodeURIComponent(c.email)}?subject=Re: ${encodeURIComponent(c.subject||'Your message')}`);
+  };
+  document.getElementById('contactModal').classList.add('open');
+}
+
+function markAllRead() {
+  allContacts.forEach(c => { c.read = true; });
+  updateUnreadBadge();
+  renderContacts();
+  showToastA('All messages marked as read.','info');
+  fetch(`${API}/api/contacts/mark-all-read`, { method:'PATCH' }).catch(()=>{});
+}
+
+// ══════════════════════════════════
+//  EXPORT EXCEL
+// ══════════════════════════════════
+function exportExcel() {
+  if (allContacts.length === 0) { showToastA('No messages to export.','error'); return; }
+  const rows = allContacts.map(c => ({
+    'ID':          c.id,
+    'First Name':  c.firstName,
+    'Last Name':   c.lastName || '',
+    'Email':       c.email,
+    'Subject':     c.subject || '',
+    'Message':     c.message || '',
+    'Received At': c.receivedAt ? new Date(c.receivedAt).toLocaleString() : '',
+    'Status':      c.read ? 'Read' : 'Unread',
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+
+  // Column widths
+  ws['!cols'] = [
+    {wch:14},{wch:14},{wch:14},{wch:28},{wch:24},{wch:48},{wch:22},{wch:10}
+  ];
+
+  // Header style (bold)
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let C = range.s.c; C <= range.e.c; C++) {
+    const cell = ws[XLSX.utils.encode_cell({r:0, c:C})];
+    if (cell) cell.s = { font:{bold:true}, fill:{fgColor:{rgb:'5B4FE9'}}, font:{bold:true,color:{rgb:'FFFFFF'}} };
+  }
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Messages');
+  const date = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `bolgerr-messages-${date}.xlsx`);
+  showToastA('✅ Excel file downloaded!', 'success');
+}
+
+// ══════════════════════════════════
+//  EXPORT PDF
+// ══════════════════════════════════
+function exportPDF() {
+  if (allContacts.length === 0) { showToastA('No messages to export.','error'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
+
+  // Header
+  doc.setFillColor(91, 79, 233);
+  doc.rect(0, 0, 297, 22, 'F');
+  doc.setTextColor(255,255,255);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(14);
+  doc.text('Bolgerr — Contact Messages', 14, 14);
+  doc.setFontSize(9);
+  doc.setFont('helvetica','normal');
+  const now = new Date().toLocaleString();
+  doc.text(`Exported: ${now}  |  Total: ${allContacts.length}`, 297-14, 14, {align:'right'});
+
+  // Table
+  const rows = allContacts.map(c => [
+    c.firstName + ' ' + (c.lastName||''),
+    c.email,
+    c.subject || '',
+    (c.message||'').slice(0, 80) + ((c.message||'').length > 80 ? '…' : ''),
+    c.receivedAt ? new Date(c.receivedAt).toLocaleDateString() : '',
+    c.read ? 'Read' : 'Unread',
+  ]);
+
+  doc.autoTable({
+    startY: 28,
+    head: [['Name','Email','Subject','Message','Date','Status']],
+    body: rows,
+    styles: { fontSize:8, cellPadding:3, overflow:'linebreak' },
+    headStyles: { fillColor:[91,79,233], textColor:255, fontStyle:'bold' },
+    alternateRowStyles: { fillColor:[248,246,241] },
+    columnStyles: {
+      0:{cellWidth:32}, 1:{cellWidth:48}, 2:{cellWidth:40},
+      3:{cellWidth:90}, 4:{cellWidth:26}, 5:{cellWidth:18}
+    },
+    didDrawCell: (data) => {
+      if (data.section === 'body' && data.column.index === 5) {
+        const isUnread = data.cell.raw === 'Unread';
+        doc.setFillColor(isUnread ? 91 : 107, isUnread ? 79 : 114, isUnread ? 233 : 128);
+      }
+    },
+  });
+
+  // Footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i=1; i<=pageCount; i++) {
+    doc.setPage(i);
+    doc.setTextColor(150);
+    doc.setFontSize(7);
+    doc.text(`Page ${i} of ${pageCount} — Bolgerr Admin`, 297/2, 205, {align:'center'});
+  }
+
+  const date = new Date().toISOString().split('T')[0];
+  doc.save(`bolgerr-messages-${date}.pdf`);
+  showToastA('✅ PDF downloaded!', 'success');
+}
+
+// ══════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); });
+});
+
+function showToastA(msg, type='info') {
+  const t = document.getElementById('adminToast');
+  t.textContent = msg;
+  t.className = 'toast-admin show ' + type;
+  setTimeout(() => t.className = 'toast-admin', 3000);
+}
+
+function fmtDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) + ', ' +
+         d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+}
+
+function escHtml(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Enter key login
+document.addEventListener('keydown', e => {
+  if (e.key==='Enter' && document.getElementById('loginScreen').style.display !== 'none') doLogin();
+});
+</script>
+</body>
+</html>
