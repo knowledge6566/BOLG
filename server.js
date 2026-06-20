@@ -8,6 +8,7 @@
  * SETUP INSTRUCTIONS:
  *   1. npm install express cors nodemailer
  *   2. node server.js
+ * 
  *   Server runs at http://localhost:3000
  *
  * API ENDPOINTS:
@@ -173,14 +174,14 @@ seedPosts();
    ═══════════════════════════════════════════════ */
 
 // GET /api/posts  — list all posts with optional filters
+// Use ?admin=true to get ALL posts (including drafts) for the admin panel
 app.get('/api/posts', (req, res) => {
-  const { category, search, featured, limit, sort, published } = req.query;
-  let posts = readDB('posts.json');
-
-  // Admin wants all posts, otherwise only published posts
-  if (published !== 'all') {
-    posts = posts.filter(p => p.published);
-  }
+  const allPostsRaw = readDB('posts.json');
+  // Admin mode: return every post regardless of published/deleted status
+  let posts = req.query.admin === 'true'
+    ? allPostsRaw
+    : allPostsRaw.filter(p => p.published);
+  const { category, search, featured, limit, sort } = req.query;
 
   if (category && category !== 'All') {
     posts = posts.filter(p => p.category === category);
