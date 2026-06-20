@@ -1,5 +1,6 @@
 node_modules/
 .venv/
+.vscode/
 data/
 .env
 .env.local
