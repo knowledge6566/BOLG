@@ -196,6 +196,7 @@ tr:hover td { background:rgba(91,79,233,.03); }
 #editorBody ul,#editorBody ol { padding-left:1.5rem;margin:.5rem 0; }
 #editorBody p { margin-bottom:.75rem; }
 #editorBody a { color:var(--accent);text-decoration:underline; }
+#editorBody img { max-width:100%; border-radius:8px; margin:1rem 0; display:block; }
 
 .editor-sidebar { display:flex;flex-direction:column;gap:1rem; }
 .editor-card { background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem; }
@@ -377,6 +378,8 @@ tr:hover td { background:rgba(91,79,233,.03); }
               <div class="tool-sep"></div>
               <button class="tool-btn" onclick="fmtBlock('blockquote')" title="Blockquote">❝</button>
               <button class="tool-btn" onclick="insertLink()" title="Insert link">🔗</button>
+              <button class="tool-btn" onclick="insertImagePrompt()" title="Insert image">🖼️</button>
+<input type="file" id="imageFileInput" accept="image/*" style="display:none" onchange="handleImageFile(event)"/>
               <div class="tool-sep"></div>
               <button class="tool-btn" onclick="fmt('removeFormat')" title="Clear formatting">✕ Fmt</button>
             </div>
@@ -390,6 +393,14 @@ tr:hover td { background:rgba(91,79,233,.03); }
               <button class="publish-btn" onclick="publishPost()">🚀 Publish Post</button>
               <button class="save-draft-btn" onclick="saveDraft()">Save as Draft</button>
             </div>
+            <div class="editor-card">
+  <h3>Cover Image</h3>
+  <img id="coverImagePreview" style="display:none;width:100%;border-radius:8px;margin-bottom:.75rem;max-height:160px;object-fit:cover"/>
+  <button type="button" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="document.getElementById('coverImageInput').click()">📷 Upload Cover Image</button>
+  <input type="file" id="coverImageInput" accept="image/*" style="display:none" onchange="handleCoverImageFile(event)"/>
+  <button type="button" class="btn btn-ghost btn-sm" id="removeCoverImageBtn" style="width:100%;justify-content:center;margin-top:.4rem;display:none;color:var(--danger)" onclick="removeCoverImage()">✕ Remove Cover Image</button>
+  <input type="hidden" id="postCoverImage" value=""/>
+</div>
             <div class="editor-card">
               <h3>Post Details</h3>
               <div class="field">
@@ -516,7 +527,7 @@ tr:hover td { background:rgba(91,79,233,.03); }
 const ADMIN_USER = 'shubh';
 const ADMIN_PASS = 'shubh2025';  // ← change this password
 
-const API = 'http://localhost:3000';
+const API = 'http://localhost:5000';
 
 // ══════════════════════════════════
 //  AUTH
@@ -696,6 +707,7 @@ function resetEditor() {
   document.getElementById('postFeatured').checked = false;
   document.getElementById('editPostId').value = '';
   document.getElementById('editorHeading').textContent = 'New Post';
+  removeCoverImage();
   editingPostId = null;
   pickEmoji('📝');
 }
@@ -720,6 +732,7 @@ function editPost(id) {
   document.getElementById('postFeatured').checked = !!post.featured;
   document.getElementById('editorBody').innerHTML = post.body || '';
   pickEmoji(post.emoji || '📝');
+  if (post.coverImage) setCoverImage(post.coverImage); else removeCoverImage();
   showPanel('new-post');
 }
 
@@ -731,6 +744,7 @@ function getEditorData(published = true) {
     readTime: document.getElementById('postReadTime').value.trim() || '5 min',
     category: document.getElementById('postCategory').value,
     emoji:    document.getElementById('postEmoji').value.trim() || '📝',
+    coverImage: document.getElementById('postCoverImage').value || '',
     featured: document.getElementById('postFeatured').checked,
     body:     document.getElementById('editorBody').innerHTML,
     published,
@@ -805,6 +819,72 @@ function fmtBlock(tag) {
 function insertLink() {
   const url = prompt('Enter URL:');
   if (url) fmt('createLink', url);
+}
+function handleCoverImageFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    showToastA('Please select a valid image file.', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => setCoverImage(e.target.result);
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function setCoverImage(src) {
+  document.getElementById('postCoverImage').value = src;
+  const preview = document.getElementById('coverImagePreview');
+  preview.src = src;
+  preview.style.display = 'block';
+  document.getElementById('removeCoverImageBtn').style.display = 'block';
+}
+
+function removeCoverImage() {
+  document.getElementById('postCoverImage').value = '';
+  const preview = document.getElementById('coverImagePreview');
+  preview.style.display = 'none';
+  preview.src = '';
+  document.getElementById('removeCoverImageBtn').style.display = 'none';
+}
+function insertImagePrompt() {
+  const fromComputer = confirm('Click OK to upload an image from your computer.\nClick Cancel to paste an image URL instead.');
+  if (fromComputer) {
+    document.getElementById('imageFileInput').click();
+  } else {
+    const url = prompt('Enter image URL:');
+    if (url) insertImageAtCursor(url);
+  }
+}
+
+function handleImageFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (!file.type.startsWith('image/')) {
+    showToastA('Please select a valid image file.', 'error');
+    return;
+  }
+  if (file.size > 3 * 1024 * 1024) {
+    showToastA('Image is quite large — this may slow down saving. Consider resizing it first.', 'info');
+  }
+
+  const reader = new FileReader();
+  reader.onload = e => insertImageAtCursor(e.target.result);
+  reader.readAsDataURL(file);
+  event.target.value = '';
+}
+
+function insertImageAtCursor(src) {
+  document.getElementById('editorBody').focus();
+  document.execCommand('insertImage', false, src);
+  document.querySelectorAll('#editorBody img').forEach(img => {
+    img.style.maxWidth = '100%';
+    img.style.borderRadius = '8px';
+    img.style.margin = '1rem 0';
+  });
+  showToastA('Image inserted!', 'success');
 }
 function pickEmoji(e) {
   document.getElementById('postEmoji').value = e;

@@ -323,7 +323,30 @@ def list_contacts():
     """List contact submissions (admin)."""
     contacts = read_db('contacts.json')
     return jsonify({'success': True, 'count': len(contacts), 'data': contacts})
+@app.route('/api/contacts', methods=['GET'])
+def list_contacts_plural():
+    """Same as /api/contact but matches admin panel's plural endpoint."""
+    return list_contacts()
 
+@app.route('/api/contacts/<int:contact_id>/read', methods=['PATCH'])
+def mark_contact_read(contact_id):
+    """Mark a single contact message as read."""
+    contacts = read_db('contacts.json')
+    for c in contacts:
+        if c.get('id') == contact_id:
+            c['read'] = True
+            write_db('contacts.json', contacts)
+            return jsonify({'success': True})
+    return jsonify({'success': False, 'message': 'Contact not found'}), 404
+
+@app.route('/api/contacts/mark-all-read', methods=['PATCH'])
+def mark_all_contacts_read():
+    """Mark all contact messages as read."""
+    contacts = read_db('contacts.json')
+    for c in contacts:
+        c['read'] = True
+    write_db('contacts.json', contacts)
+    return jsonify({'success': True})
 # ═══════════════════════════════════════════════════
 # ROUTES — NEWSLETTER API
 # ═══════════════════════════════════════════════════

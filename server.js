@@ -58,7 +58,8 @@ function findAvailablePort(startPort) {
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, 'public')));   // Serve HTML/CSS/JS
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname))); // Serve HTML/CSS/JS
 
 /* ─── Simple JSON file "database" ───────────── */
 const DATA_DIR = path.join(__dirname, 'data');
@@ -172,12 +173,11 @@ seedPosts();
 /* ═══════════════════════════════════════════════
    POSTS API
    ═══════════════════════════════════════════════ */
-
 // GET /api/posts  — list all posts with optional filters
 // Use ?admin=true to get ALL posts (including drafts) for the admin panel
 app.get('/api/posts', (req, res) => {
   const allPostsRaw = readDB('posts.json');
-  // Admin mode: return every post regardless of published/deleted status
+  // Admin mode: return every post regardless of published/draft status
   let posts = req.query.admin === 'true'
     ? allPostsRaw
     : allPostsRaw.filter(p => p.published);
@@ -197,9 +197,11 @@ app.get('/api/posts', (req, res) => {
   if (featured === 'true') {
     posts = posts.filter(p => p.featured);
   }
-  // Sort
-  if (sort === 'views') posts.sort((a,b) => b.views - a.views);
-  else posts.sort((a,b) => new Date(b.date) - new Date(a.date)); // newest first
+  if (sort === 'views') {
+    posts.sort((a, b) => b.views - a.views);
+  } else {
+    posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }
 
   if (limit) posts = posts.slice(0, parseInt(limit));
 
@@ -223,7 +225,7 @@ app.post('/api/posts', (req, res) => {
   const { title, category, emoji, author, readTime, excerpt, body, featured } = req.body;
   if (!title || !category || !excerpt) {
     return res.status(400).json({ success: false, message: 'title, category, and excerpt are required' });
-  }
+}
 
   const posts = readDB('posts.json');
   const newPost = {
