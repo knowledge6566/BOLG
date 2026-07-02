@@ -787,7 +787,7 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
 let POSTS = [];
 
 async function loadPosts() {
-   endpoints = [
+  const endpoints = [
     '/api/posts',
     'http://localhost:3000/api/posts',
     'http://localhost:5000/api/posts',
@@ -854,8 +854,11 @@ function navigate(page) {
 function createPostCard(post, featured=false) {
   const el = document.createElement('div');
   el.className = 'post-card tilt-card' + (featured ? ' featured' : '');
+  const imgStyle = post.coverImage
+    ? `background-image:url('${post.coverImage}');background-size:cover;background-position:center`
+    : '';
   el.innerHTML = `
-    <div clasconsts="post-card-img"><span>${post.emoji}</span></div>
+    <div class="post-card-img" style="${imgStyle}"><span>${post.coverImage ? '' : post.emoji}</span></div>
     <div class="tilt-shine"></div>
     <div class="post-card-body">
       <div class="post-tag">${post.category}</div>
@@ -929,7 +932,7 @@ function openPost(id) {
         <span>⏱ ${post.readTime} read</span>
       </div>
     </div>
-    <div class="single-post-cover"><span>${post.emoji}</span></div>
+    <div class="single-post-cover" style="${post.coverImage ? `background-image:url('${post.coverImage}');background-size:cover;background-position:center` : ''}"><span>${post.coverImage ? '' : post.emoji}</span></div>
     <div class="post-body">${post.body}</div>
     <div style="margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
       <div>
