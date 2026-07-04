@@ -57,6 +57,7 @@ img{max-width:100%;display:block}
 .login-box input:focus { border-color:var(--accent); }
 .login-btn { width:100%;padding:.9rem;background:var(--accent);color:#fff;border-radius:40px;font-family:var(--ff-display);font-weight:700;font-size:.95rem;letter-spacing:.02em;transition:transform .2s,box-shadow .2s; }
 .login-btn:hover { transform:translateY(-2px);box-shadow:0 8px 24px var(--glow); }
+.login-btn:disabled { opacity:.6;cursor:not-allowed;transform:none; }
 .login-err { color:var(--danger);font-size:.82rem;margin-top:.5rem;min-height:1.2rem; }
 .login-back { margin-top:1.5rem;color:var(--muted);font-size:.82rem; }
 .login-back a { color:var(--accent);font-weight:600; }
@@ -280,7 +281,7 @@ tr:hover td { background:rgba(91,79,233,.03); }
       <label>Password</label>
       <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"/>
     </div>
-    <button class="login-btn" onclick="doLogin()">Sign In →</button>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In →</button>
     <div class="login-err" id="loginErr"></div>
     <div class="login-back">← <a href="index.html">Back to Bolgerr</a></div>
   </div>
@@ -522,36 +523,60 @@ tr:hover td { background:rgba(91,79,233,.03); }
 
 <script>
 // ══════════════════════════════════
-//  CONFIG — change these!
+//  CONFIG
+//  NOTE: There is no username/password stored here anymore.
+//  Login is verified by the server at /api/admin/login.
+//  Update API to your real deployed backend URL (must be https://) before going live.
 // ══════════════════════════════════
-const ADMIN_USER = 'shubh';
-const ADMIN_PASS = 'shubh2025';  // ← change this password
-
 const API = 'http://localhost:5000';
 
 // ══════════════════════════════════
 //  AUTH
 // ══════════════════════════════════
-function doLogin() {
+async function doLogin() {
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value;
   const err = document.getElementById('loginErr');
-  if (u === ADMIN_USER && p === ADMIN_PASS) {
-    sessionStorage.setItem('bolgerr_admin', '1');
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('appShell').classList.add('visible');
-    initApp();
-  } else {
-    err.textContent = 'Incorrect username or password.';
+  const btn = document.getElementById('loginBtn');
+  err.textContent = '';
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  try {
+    const res = await fetch(`${API}/api/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+    const data = await res.json();
+    if (data.success) {
+      sessionStorage.setItem('bolgerr_token', data.token);
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('appShell').classList.add('visible');
+      initApp();
+    } else {
+      err.textContent = data.message || 'Incorrect username or password.';
+    }
+  } catch {
+    err.textContent = 'Cannot reach server. Make sure the backend is running.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign In →';
   }
 }
 
 function doLogout() {
-  sessionStorage.removeItem('bolgerr_admin');
+  sessionStorage.removeItem('bolgerr_token');
   location.reload();
 }
 
-if (sessionStorage.getItem('bolgerr_admin')) {
+// authFetch: attaches the saved token to every admin API call
+function authFetch(url, options = {}) {
+  const token = sessionStorage.getItem('bolgerr_token');
+  options.headers = { ...(options.headers || {}), 'Authorization': `Bearer ${token}` };
+  return fetch(url, options);
+}
+
+if (sessionStorage.getItem('bolgerr_token')) {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appShell').classList.add('visible');
   window.addEventListener('DOMContentLoaded', initApp);
@@ -594,7 +619,8 @@ let allContacts = [];
 
 async function fetchAllPosts() {
   try {
-    const res = await fetch(`${API}/api/posts?admin=true`);
+    const res = await authFetch(`${API}/api/posts?admin=true`);
+    if (res.status === 401) { doLogout(); return allPosts; }
     const data = await res.json();
     allPosts = data.data || [];
   } catch {
@@ -605,16 +631,13 @@ async function fetchAllPosts() {
 
 async function fetchContacts() {
   try {
-    const res = await fetch(`${API}/api/contacts`);
+    const res = await authFetch(`${API}/api/contacts`);
+    if (res.status === 401) { doLogout(); return allContacts; }
     if (res.ok) {
       const data = await res.json();
       allContacts = data.data || [];
       return allContacts;
     }
-  } catch {}
-  try {
-    const res = await fetch('./data/contacts.json');
-    if (res.ok) { allContacts = await res.json(); return allContacts; }
   } catch {}
   return allContacts;
 }
@@ -768,10 +791,11 @@ async function savePost(payload) {
   try {
     let res;
     if (id) {
-      res = await fetch(`${API}/api/posts/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      res = await authFetch(`${API}/api/posts/${id}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
     } else {
-      res = await fetch(`${API}/api/posts`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+      res = await authFetch(`${API}/api/posts`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
     }
+    if (res.status === 401) { doLogout(); return; }
     const result = await res.json();
     if (result.success) {
       showToastA(id ? '✅ Post updated!' : '🚀 Post published!', 'success');
@@ -796,7 +820,8 @@ function promptDelete(id) {
 async function confirmDelete() {
   if (!pendingDeleteId) return;
   try {
-    const res = await fetch(`${API}/api/posts/${pendingDeleteId}`, { method:'DELETE' });
+    const res = await authFetch(`${API}/api/posts/${pendingDeleteId}`, { method:'DELETE' });
+    if (res.status === 401) { doLogout(); return; }
     const data = await res.json();
     if (data.success) {
       showToastA('Post archived.','success');
@@ -936,7 +961,7 @@ function openContact(id) {
   c.read = true;
   updateUnreadBadge();
   renderContacts();
-  fetch(`${API}/api/contacts/${id}/read`, { method:'PATCH' }).catch(()=>{});
+  authFetch(`${API}/api/contacts/${id}/read`, { method:'PATCH' }).catch(()=>{});
 
   document.getElementById('modalContactName').textContent = `${c.firstName} ${c.lastName||''}`;
   document.getElementById('modalContactBody').innerHTML = `
@@ -956,7 +981,7 @@ function markAllRead() {
   updateUnreadBadge();
   renderContacts();
   showToastA('All messages marked as read.','info');
-  fetch(`${API}/api/contacts/mark-all-read`, { method:'PATCH' }).catch(()=>{});
+  authFetch(`${API}/api/contacts/mark-all-read`, { method:'PATCH' }).catch(()=>{});
 }
 
 // ══════════════════════════════════
