@@ -1,25 +1,25 @@
 /**
  * =============================================
  *   BOLGERR — Node.js / Express Backend
- *   Version: 1.0.0
+ *   Version: 1.1.0 — now with real admin authentication
  *   Stack: Node.js + Express + JSON file store
  * =============================================
  *
  * SETUP INSTRUCTIONS:
- *   1. npm install express cors nodemailer
- *   2. node server.js
- * 
- *   Server runs at http://localhost:3000
+ *   1. npm install express cors nodemailer jsonwebtoken bcryptjs
+ *   2. Make sure your .env file has ADMIN_USER, ADMIN_PASS_HASH, JWT_SECRET set
+ *   3. node server.js
  *
  * API ENDPOINTS:
  *   GET    /api/posts             - All posts (optional ?category=Tech&search=...)
  *   GET    /api/posts/:id         - Single post
- *   POST   /api/posts             - Create post (admin)
- *   PUT    /api/posts/:id         - Update post (admin)
- *   DELETE /api/posts/:id         - Delete post (admin)
+ *   POST   /api/admin/login       - Admin login, returns a JWT token
+ *   POST   /api/posts             - Create post (admin, requires token)
+ *   PUT    /api/posts/:id         - Update post (admin, requires token)
+ *   DELETE /api/posts/:id         - Delete post (admin, requires token)
  *   POST   /api/contact           - Contact form submission
  *   POST   /api/newsletter        - Newsletter subscription
- *   GET    /api/subscribers       - List subscribers (admin)
+ *   GET    /api/subscribers       - List subscribers (admin, requires token)
  *   GET    /api/stats             - Site statistics
  *   GET    /api/categories        - All categories
  */
@@ -29,9 +29,21 @@ const cors    = require('cors');
 const path    = require('path');
 const fs      = require('fs');
 const net     = require('net');
+const jwt     = require('jsonwebtoken');
+const bcrypt  = require('bcryptjs');
 
 const app  = express();
 const PORT = Number(process.env.PORT) || 3000;
+
+/* ─── Admin auth config (from environment — never hardcode these) ─── */
+const ADMIN_USER      = process.env.ADMIN_USER;
+const ADMIN_PASS_HASH = process.env.ADMIN_PASS_HASH;
+const JWT_SECRET      = process.env.JWT_SECRET;
+
+if (!ADMIN_USER || !ADMIN_PASS_HASH || !JWT_SECRET) {
+  console.warn('⚠️  WARNING: ADMIN_USER, ADMIN_PASS_HASH, or JWT_SECRET is missing from your .env file.');
+  console.warn('⚠️  Admin login will not work until these are set.');
+}
 
 function findAvailablePort(startPort) {
   return new Promise((resolve, reject) => {
@@ -55,11 +67,27 @@ function findAvailablePort(startPort) {
 }
 
 /* ─── Middleware ─────────────────────────────── */
-app.use(cors());
+// CORS restricted to your actual site — change this if your domain changes
+app.use(cors({ origin: 'https://knowledge6566.github.io' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.static(path.join(__dirname))); // Serve HTML/CSS/JS
+
+/* ─── Admin auth middleware ─────────────────── */
+function requireAdmin(req, res, next) {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  if (!token) {
+    return res.status(401).json({ success: false, message: 'No token provided' });
+  }
+  try {
+    jwt.verify(token, JWT_SECRET);
+    next();
+  } catch {
+    return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+  }
+}
 
 /* ─── Simple JSON file "database" ───────────── */
 const DATA_DIR = path.join(__dirname, 'data');
@@ -171,16 +199,45 @@ function seedPosts() {
 seedPosts();
 
 /* ═══════════════════════════════════════════════
+   ADMIN LOGIN
+   ═══════════════════════════════════════════════ */
+app.post('/api/admin/login', async (req, res) => {
+  const { username, password } = req.body;
+  if (!ADMIN_USER || !ADMIN_PASS_HASH || !JWT_SECRET) {
+    return res.status(500).json({ success: false, message: 'Server admin auth is not configured.' });
+  }
+  if (username !== ADMIN_USER) {
+    return res.status(401).json({ success: false, message: 'Invalid credentials' });
+  }
+  const valid = await bcrypt.compare(password, ADMIN_PASS_HASH);
+  if (!valid) {
+    return res.status(401).json({ success: false, message: 'Invalid credentials' });
+  }
+  const token = jwt.sign({ user: username }, JWT_SECRET, { expiresIn: '12h' });
+  res.json({ success: true, token });
+});
+
+/* ═══════════════════════════════════════════════
    POSTS API
    ═══════════════════════════════════════════════ */
-// GET /api/posts  — list all posts with optional filters
-// Use ?admin=true to get ALL posts (including drafts) for the admin panel
+// GET /api/posts  — list all posts with optional filters (public)
+// Use ?admin=true (requires a valid admin token) to get ALL posts including drafts
 app.get('/api/posts', (req, res) => {
   const allPostsRaw = readDB('posts.json');
-  // Admin mode: return every post regardless of published/draft status
-  let posts = req.query.admin === 'true'
-    ? allPostsRaw
-    : allPostsRaw.filter(p => p.published);
+
+  let wantsAdminView = req.query.admin === 'true';
+  if (wantsAdminView) {
+    // Verify the token even for this GET route, since admin=true reveals drafts
+    const authHeader = req.headers.authorization || '';
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    try {
+      jwt.verify(token, JWT_SECRET);
+    } catch {
+      wantsAdminView = false; // fall back to public view if token invalid/missing
+    }
+  }
+
+  let posts = wantsAdminView ? allPostsRaw : allPostsRaw.filter(p => p.published);
   const { category, search, featured, limit, sort } = req.query;
 
   if (category && category !== 'All') {
@@ -208,7 +265,7 @@ app.get('/api/posts', (req, res) => {
   res.json({ success: true, count: posts.length, data: posts });
 });
 
-// GET /api/posts/:id  — single post (also increments view count)
+// GET /api/posts/:id  — single post (also increments view count) — public
 app.get('/api/posts/:id', (req, res) => {
   const posts = readDB('posts.json');
   const idx   = posts.findIndex(p => p.id === parseInt(req.params.id) || p.slug === req.params.id);
@@ -220,12 +277,12 @@ app.get('/api/posts/:id', (req, res) => {
   res.json({ success: true, data: posts[idx] });
 });
 
-// POST /api/posts  — create a new post
-app.post('/api/posts', (req, res) => {
+// POST /api/posts  — create a new post (admin only)
+app.post('/api/posts', requireAdmin, (req, res) => {
   const { title, category, emoji, author, readTime, excerpt, body, featured } = req.body;
   if (!title || !category || !excerpt) {
     return res.status(400).json({ success: false, message: 'title, category, and excerpt are required' });
-}
+  }
 
   const posts = readDB('posts.json');
   const newPost = {
@@ -245,8 +302,8 @@ app.post('/api/posts', (req, res) => {
   res.status(201).json({ success: true, data: newPost });
 });
 
-// PUT /api/posts/:id  — update a post
-app.put('/api/posts/:id', (req, res) => {
+// PUT /api/posts/:id  — update a post (admin only)
+app.put('/api/posts/:id', requireAdmin, (req, res) => {
   const posts = readDB('posts.json');
   const idx   = posts.findIndex(p => p.id === parseInt(req.params.id));
   if (idx === -1) return res.status(404).json({ success: false, message: 'Post not found' });
@@ -256,8 +313,8 @@ app.put('/api/posts/:id', (req, res) => {
   res.json({ success: true, data: posts[idx] });
 });
 
-// DELETE /api/posts/:id  — delete (soft-delete by setting published=false)
-app.delete('/api/posts/:id', (req, res) => {
+// DELETE /api/posts/:id  — delete (soft-delete by setting published=false) (admin only)
+app.delete('/api/posts/:id', requireAdmin, (req, res) => {
   const posts = readDB('posts.json');
   const idx   = posts.findIndex(p => p.id === parseInt(req.params.id));
   if (idx === -1) return res.status(404).json({ success: false, message: 'Post not found' });
@@ -304,14 +361,14 @@ app.post('/api/contact', (req, res) => {
   res.status(200).json({ success: true, message: "Your message has been received! We'll reply within 24–48 hours." });
 });
 
-// GET /api/contacts  — admin: list all contacts
-app.get('/api/contacts', (req, res) => {
+// GET /api/contacts  — admin: list all contacts (admin only)
+app.get('/api/contacts', requireAdmin, (req, res) => {
   const contacts = readDB('contacts.json');
   res.json({ success: true, count: contacts.length, data: contacts });
 });
 
-// PATCH /api/contacts/:id/read  — mark one contact as read
-app.patch('/api/contacts/:id/read', (req, res) => {
+// PATCH /api/contacts/:id/read  — mark one contact as read (admin only)
+app.patch('/api/contacts/:id/read', requireAdmin, (req, res) => {
   const contacts = readDB('contacts.json');
   const idx = contacts.findIndex(c => c.id === parseInt(req.params.id));
   if (idx === -1) return res.status(404).json({ success: false, message: 'Contact not found' });
@@ -320,8 +377,8 @@ app.patch('/api/contacts/:id/read', (req, res) => {
   res.json({ success: true });
 });
 
-// PATCH /api/contacts/mark-all-read  — mark all contacts as read
-app.patch('/api/contacts/mark-all-read', (req, res) => {
+// PATCH /api/contacts/mark-all-read  — mark all contacts as read (admin only)
+app.patch('/api/contacts/mark-all-read', requireAdmin, (req, res) => {
   const contacts = readDB('contacts.json');
   contacts.forEach(c => { c.read = true; });
   writeDB('contacts.json', contacts);
@@ -349,8 +406,8 @@ app.post('/api/newsletter', (req, res) => {
   res.status(201).json({ success: true, message: 'Welcome to Bolgerr! Check your inbox for a confirmation.' });
 });
 
-// GET /api/subscribers  — admin view
-app.get('/api/subscribers', (req, res) => {
+// GET /api/subscribers  — admin view (admin only)
+app.get('/api/subscribers', requireAdmin, (req, res) => {
   const subs = readDB('subscribers.json');
   res.json({ success: true, count: subs.length, data: subs });
 });
@@ -409,9 +466,10 @@ app.use((err, req, res, next) => {
     app.listen(RUN_PORT, () => {
       console.log(`\n🚀  Bolgerr backend running at http://localhost:${RUN_PORT}`);
       console.log(`📖  API docs:`);
+      console.log(`     POST /api/admin/login        Admin login (returns token)`);
       console.log(`     GET  /api/posts              List all posts`);
       console.log(`     GET  /api/posts/:id          Single post`);
-      console.log(`     POST /api/posts              Create post`);
+      console.log(`     POST /api/posts              Create post (auth required)`);
       console.log(`     POST /api/contact            Submit contact form`);
       console.log(`     POST /api/newsletter         Subscribe to newsletter`);
       console.log(`     GET  /api/stats              Site statistics`);
