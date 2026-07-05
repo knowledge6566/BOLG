@@ -974,12 +974,8 @@ function submitContact(event) {
 
   const payload = { firstName: fname, lastName: lname, email, subject, message };
   const endpoints = [
-    '/api/posts',
-    'http://localhost:8080/api/posts',
-    'http://127.0.0.1:8080/api/posts',
-    'http://localhost:3000/api/posts',
-    'http://localhost:5000/api/posts',
-];
+    'https://bolg-lhti.onrender.com/api/contact',
+  ];
 
   const submitTo = async url => {
     const response = await fetch(url, {
@@ -1011,15 +1007,10 @@ function submitContact(event) {
         console.warn(`Contact submission failed for ${url}:`, err);
       }
     }
-
+/* ====== NEWSLETTER ====== */
     console.error('Contact submission error:', lastError);
     const isFileProtocol = window.location.protocol === 'file:';
-    showToast(
-      isFileProtocol
-        ? 'Unable to send message. Open the site through the local backend server and try again.'
-        : 'Unable to send message. Make sure the backend is running on localhost:3000 or localhost:5000.',
-      'error'
-    );
+    showToast('Unable to send message. Please try again in a moment.', 'error')
     btn.textContent = 'Send Message →';
     btn.disabled = false;
   })();
