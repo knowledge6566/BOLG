@@ -788,15 +788,7 @@ let POSTS = [];
 
 async function loadPosts() {
   const endpoints = [
-    '/api/posts',
-    'http://localhost:3000/api/posts',
-    'http://localhost:5000/api/posts',
-    'http://localhost:5001/api/posts',
-    'http://localhost:5002/api/posts',
-    'http://127.0.0.1:3000/api/posts',
-    'http://127.0.0.1:5000/api/posts',
-    'http://127.0.0.1:5001/api/posts',
-    'http://127.0.0.1:5002/api/posts',
+    'https://bolg-lhti.onrender.com/api/posts',
   ];
   for (const url of endpoints) {
     try {
