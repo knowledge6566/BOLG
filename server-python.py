@@ -33,7 +33,8 @@ import os
 import socket
 from pathlib import Path
 import re
-
+import secrets
+from functools import wraps
 # ─────────────────────────────────────────────────
 # FLASK APP SETUP
 # ─────────────────────────────────────────────────
@@ -44,6 +45,19 @@ PORT = int(os.environ.get('PORT', 5000))
 DATA_DIR = Path(__file__).parent / 'data'
 DATA_DIR.mkdir(exist_ok=True)
 
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'shubh')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'shubh2025')
+VALID_TOKENS = set()
+
+def require_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth_header = request.headers.get('Authorization', '')
+        token = auth_header.replace('Bearer ', '').strip()
+        if not token or token not in VALID_TOKENS:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+        return f(*args, **kwargs)
+    return decorated
 
 def find_available_port(start_port: int) -> int:
     """Return the first free port starting from start_port."""
@@ -135,7 +149,17 @@ def seed_posts():
 # ═══════════════════════════════════════════════════
 # ROUTES — POSTS API
 # ═══════════════════════════════════════════════════
-
+@app.route('/api/admin/login', methods=['POST'])
+def admin_login():
+    """Verify admin credentials and issue a session token."""
+    data = request.json or {}
+    username = data.get('username', '')
+    password = data.get('password', '')
+    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        token = secrets.token_hex(32)
+        VALID_TOKENS.add(token)
+        return jsonify({'success': True, 'token': token})
+    return jsonify({'success': False, 'message': 'Incorrect username or password.'}), 401
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
     """List all posts with optional filtering."""
@@ -196,8 +220,8 @@ def get_post(post_id):
     write_db('posts.json', posts)
 
     return jsonify({'success': True, 'data': post})
-
 @app.route('/api/posts', methods=['POST'])
+@require_auth
 def create_post():
     """Create a new blog post."""
     data = request.json or {}
@@ -238,6 +262,7 @@ def create_post():
     return jsonify({'success': True, 'data': new_post}), 201
 
 @app.route('/api/posts/<int:post_id>', methods=['PUT'])
+@require_auth
 def update_post(post_id):
     """Update an existing post."""
     posts = read_db('posts.json')
@@ -253,6 +278,7 @@ def update_post(post_id):
     return jsonify({'success': True, 'data': posts[post_idx]})
 
 @app.route('/api/posts/<int:post_id>', methods=['DELETE'])
+@require_auth
 def delete_post(post_id):
     """Delete (soft) a post by setting published=False."""
     posts = read_db('posts.json')
@@ -324,11 +350,13 @@ def list_contacts():
     contacts = read_db('contacts.json')
     return jsonify({'success': True, 'count': len(contacts), 'data': contacts})
 @app.route('/api/contacts', methods=['GET'])
+@require_auth
 def list_contacts_plural():
     """Same as /api/contact but matches admin panel's plural endpoint."""
     return list_contacts()
 
 @app.route('/api/contacts/<int:contact_id>/read', methods=['PATCH'])
+@require_auth
 def mark_contact_read(contact_id):
     """Mark a single contact message as read."""
     contacts = read_db('contacts.json')
@@ -338,8 +366,8 @@ def mark_contact_read(contact_id):
             write_db('contacts.json', contacts)
             return jsonify({'success': True})
     return jsonify({'success': False, 'message': 'Contact not found'}), 404
-
 @app.route('/api/contacts/mark-all-read', methods=['PATCH'])
+@require_auth
 def mark_all_contacts_read():
     """Mark all contact messages as read."""
     contacts = read_db('contacts.json')
