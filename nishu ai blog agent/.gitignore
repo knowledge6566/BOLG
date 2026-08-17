@@ -1,0 +1,6 @@
+node_modules/
+.env
+.playwright/
+data/*.tmp
+*.log
+.DS_Store
