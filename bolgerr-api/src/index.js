@@ -1,65 +1,171 @@
-const CORS = {
-  "Access-Control-Allow-Origin": "https://knowledge6566.github.io",
-  "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-};
+const ALLOWED_ORIGINS = [
+  "https://knowledge6566.github.io",
+  "https://nishublogs.online",
+  "https://www.nishublogs.online",
+  "http://localhost:5500",
+  "http://127.0.0.1:5500",
+];
 
-const json = (data, status = 200) =>
-  new Response(JSON.stringify(data), {
+function corsHeaders(request) {
+  const origin = request.headers.get("Origin");
+  return {
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+    "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  };
+}
+
+function json(request, data, status = 200) {
+  return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json", ...CORS },
+    headers: { "Content-Type": "application/json", ...corsHeaders(request) },
   });
+}
 
-// Only requests with the correct admin token can change data
 function isAuthorized(request, env) {
   return request.headers.get("Authorization") === `Bearer ${env.ADMIN_TOKEN}`;
 }
 
+// Convert database rows into the shape the frontend expects
+const toPost = row => ({
+  ...row,
+  date: row.postDate,
+  featured: !!row.featured,
+  published: !!row.published,
+});
+
+const toContact = row => ({ ...row, read: !!row.isRead });
+
+// Values for INSERT/UPDATE, in the same column order
+function postValues(p) {
+  return [
+    p.title,
+    p.excerpt || "",
+    p.body || "",
+    p.author || "Anonymous",
+    p.readTime || "5 min",
+    p.category || "Technology",
+    p.emoji || "📝",
+    p.coverImage || "",
+    p.featured ? 1 : 0,
+    p.published === false ? 0 : 1,
+  ];
+}
+
+// ---------- Handlers ----------
+
+async function adminLogin(request, env) {
+  const { username, password } = await request.json();
+  if (env.ADMIN_USERNAME && env.ADMIN_PASSWORD &&
+      username === env.ADMIN_USERNAME && password === env.ADMIN_PASSWORD) {
+    return json(request, { success: true, token: env.ADMIN_TOKEN });
+  }
+  return json(request, { success: false, message: "Incorrect username or password." }, 401);
+}
+
+async function getPosts(request, env, url) {
+  // Drafts are only returned to a logged-in admin
+  const wantsAll = url.searchParams.get("admin") === "true" && isAuthorized(request, env);
+  const sql = wantsAll
+    ? "SELECT * FROM posts ORDER BY id DESC"
+    : "SELECT * FROM posts WHERE published = 1 ORDER BY id DESC";
+  const { results } = await env.DB.prepare(sql).all();
+  return json(request, { success: true, data: results.map(toPost) });
+}
+
+async function createPost(request, env) {
+  const p = await request.json();
+  if (!p.title) return json(request, { success: false, message: "Title is required." }, 400);
+  const r = await env.DB.prepare(
+    `INSERT INTO posts (title, excerpt, body, author, readTime, category, emoji, coverImage, featured, published)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  ).bind(...postValues(p)).run();
+  return json(request, { success: true, id: r.meta.last_row_id }, 201);
+}
+
+async function updatePost(request, env, id) {
+  const p = await request.json();
+  if (!p.title) return json(request, { success: false, message: "Title is required." }, 400);
+  await env.DB.prepare(
+    `UPDATE posts SET title=?, excerpt=?, body=?, author=?, readTime=?, category=?, emoji=?,
+     coverImage=?, featured=?, published=? WHERE id=?`
+  ).bind(...postValues(p), id).run();
+  return json(request, { success: true });
+}
+
+async function deletePost(request, env, id) {
+  await env.DB.prepare("DELETE FROM posts WHERE id = ?").bind(id).run();
+  return json(request, { success: true });
+}
+
+async function createContact(request, env) {
+  const c = await request.json();
+  if (!c.firstName || !c.email || !c.message) {
+    return json(request, { success: false, message: "Missing required fields." }, 400);
+  }
+  await env.DB.prepare(
+    "INSERT INTO contacts (firstName, lastName, email, subject, message) VALUES (?, ?, ?, ?, ?)"
+  ).bind(c.firstName, c.lastName || "", c.email, c.subject || "", c.message).run();
+  return json(request, { success: true, message: "Message received." }, 201);
+}
+
+async function getContacts(request, env) {
+  const { results } = await env.DB.prepare("SELECT * FROM contacts ORDER BY id DESC").all();
+  return json(request, { success: true, data: results.map(toContact) });
+}
+
+async function markRead(request, env, id) {
+  await env.DB.prepare("UPDATE contacts SET isRead = 1 WHERE id = ?").bind(id).run();
+  return json(request, { success: true });
+}
+
+async function markAllRead(request, env) {
+  await env.DB.prepare("UPDATE contacts SET isRead = 1").run();
+  return json(request, { success: true });
+}
+
+// ---------- Router ----------
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const { pathname } = url;
+    const method = request.method;
 
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: CORS });
+    if (method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders(request) });
     }
 
-    // GET all posts (public)
-    if (url.pathname === "/api/posts" && request.method === "GET") {
-      const { results } = await env.DB
-        .prepare("SELECT * FROM posts ORDER BY created_at DESC")
-        .all();
-      return json(results);
+    const postId = pathname.match(/^\/api\/posts\/(\d+)$/)?.[1];
+    const contactReadId = pathname.match(/^\/api\/contacts\/(\d+)\/read$/)?.[1];
+
+    // Routes that change data or read messages require the admin token
+    const needsAdmin =
+      (pathname === "/api/posts" && method === "POST") ||
+      (postId && (method === "PUT" || method === "DELETE")) ||
+      (pathname === "/api/contacts" && method === "GET") ||
+      (contactReadId && method === "PATCH") ||
+      (pathname === "/api/contacts/mark-all-read" && method === "PATCH");
+
+    if (needsAdmin && !isAuthorized(request, env)) {
+      return json(request, { success: false, message: "Unauthorized" }, 401);
     }
 
-    // CREATE a post (admin only)
-    if (url.pathname === "/api/posts" && request.method === "POST") {
-      if (!isAuthorized(request, env)) return json({ error: "Unauthorized" }, 401);
-      const { title, slug, content } = await request.json();
-      const r = await env.DB
-        .prepare("INSERT INTO posts (title, slug, content) VALUES (?, ?, ?)")
-        .bind(title, slug, content)
-        .run();
-      return json({ id: r.meta.last_row_id, title, slug }, 201);
+    try {
+      if (pathname === "/api/admin/login" && method === "POST") return await adminLogin(request, env);
+      if (pathname === "/api/contact" && method === "POST") return await createContact(request, env);
+      if (pathname === "/api/posts" && method === "GET") return await getPosts(request, env, url);
+      if (pathname === "/api/posts" && method === "POST") return await createPost(request, env);
+      if (postId && method === "PUT") return await updatePost(request, env, postId);
+      if (postId && method === "DELETE") return await deletePost(request, env, postId);
+      if (pathname === "/api/contacts" && method === "GET") return await getContacts(request, env);
+      if (contactReadId && method === "PATCH") return await markRead(request, env, contactReadId);
+      if (pathname === "/api/contacts/mark-all-read" && method === "PATCH") return await markAllRead(request, env);
+
+      return json(request, { success: false, message: "Not found" }, 404);
+    } catch (err) {
+      console.error(err);
+      return json(request, { success: false, message: "Server error" }, 500);
     }
-
-    const match = url.pathname.match(/^\/api\/posts\/(\d+)$/);
-
-    // GET one post (public)
-    if (match && request.method === "GET") {
-      const post = await env.DB
-        .prepare("SELECT * FROM posts WHERE id = ?")
-        .bind(match[1])
-        .first();
-      return post ? json(post) : json({ error: "Not found" }, 404);
-    }
-
-    // DELETE a post (admin only)
-    if (match && request.method === "DELETE") {
-      if (!isAuthorized(request, env)) return json({ error: "Unauthorized" }, 401);
-      await env.DB.prepare("DELETE FROM posts WHERE id = ?").bind(match[1]).run();
-      return json({ ok: true });
-    }
-
-    return json({ error: "Not found" }, 404);
   },
 };
