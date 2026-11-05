@@ -1,0 +1,12 @@
+{
+  "name": "bolgerr-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-01-01",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "blogs",
+      "database_id": "bd6caeb5-b44e-4529-91d5-0ecb846d9cbd"
+    }
+  ]
+}
