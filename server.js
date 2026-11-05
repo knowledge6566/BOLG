@@ -1,86 +1,55 @@
 /**
- * =============================================
- *   BOLGERR — Node.js / Express Backend
- *   Version: 1.1.0 — now with real admin authentication
- *   Stack: Node.js + Express + JSON file store
- * =============================================
+ * BOLGERR — Node.js / Express Backend
+ * Version: 2.0.0 — Supabase (Postgres) data store
  *
- * SETUP INSTRUCTIONS:
- *   1. npm install express cors nodemailer jsonwebtoken bcryptjs
- *   2. Make sure your .env file has ADMIN_USER, ADMIN_PASS_HASH, JWT_SECRET set
- *   3. node server.js
- *
- * API ENDPOINTS:
- *   GET    /api/posts             - All posts (optional ?category=Tech&search=...)
- *   GET    /api/posts/:id         - Single post
- *   POST   /api/admin/login       - Admin login, returns a JWT token
- *   POST   /api/posts             - Create post (admin, requires token)
- *   PUT    /api/posts/:id         - Update post (admin, requires token)
- *   DELETE /api/posts/:id         - Delete post (admin, requires token)
- *   POST   /api/contact           - Contact form submission
- *   POST   /api/newsletter        - Newsletter subscription
- *   GET    /api/subscribers       - List subscribers (admin, requires token)
- *   GET    /api/stats             - Site statistics
- *   GET    /api/categories        - All categories
+ * ENV VARS (set on your host, never commit):
+ *   ADMIN_USER, ADMIN_PASS_HASH, JWT_SECRET
+ *   SUPABASE_URL, SUPABASE_SERVICE_KEY
+ *   PORT (optional)
  */
 
+require('dotenv').config();
 const express = require('express');
-const cors    = require('cors');
-const path    = require('path');
-const fs      = require('fs');
-const net     = require('net');
-const jwt     = require('jsonwebtoken');
-const bcrypt  = require('bcryptjs');
+const cors = require('cors');
+const path = require('path');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const { createClient } = require('@supabase/supabase-js');
 
-const app  = express();
+const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-/* ─── Admin auth config (from environment — never hardcode these) ─── */
-const ADMIN_USER      = process.env.ADMIN_USER;
+/* ─── Config ─── */
+const ADMIN_USER = process.env.ADMIN_USER;
 const ADMIN_PASS_HASH = process.env.ADMIN_PASS_HASH;
-const JWT_SECRET      = process.env.JWT_SECRET;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!ADMIN_USER || !ADMIN_PASS_HASH || !JWT_SECRET) {
-  console.warn('⚠️  WARNING: ADMIN_USER, ADMIN_PASS_HASH, or JWT_SECRET is missing from your .env file.');
-  console.warn('⚠️  Admin login will not work until these are set.');
+  console.warn('⚠️  ADMIN_USER, ADMIN_PASS_HASH or JWT_SECRET missing. Admin login disabled.');
 }
 
-function findAvailablePort(startPort) {
-  return new Promise((resolve, reject) => {
-    const tryPort = (port) => {
-      const tester = net.createServer();
-      tester.unref();
-      tester.once('error', (err) => {
-        if (err.code === 'EADDRINUSE') {
-          return tryPort(port + 1);
-        }
-        reject(err);
-      });
-      tester.listen(port, '0.0.0.0', () => {
-        const address = tester.address();
-        tester.close(() => resolve(address.port));
-      });
-    };
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
-    tryPort(startPort);
-  });
-}
-
-/* ─── Middleware ─────────────────────────────── */
-// CORS restricted to your actual site — change this if your domain changes
+/* ─── Middleware ─── */
 app.use(cors({ origin: 'https://knowledge6566.github.io' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.static(path.join(__dirname))); // Serve HTML/CSS/JS
 
-/* ─── Admin auth middleware ─────────────────── */
+/* ─── Helpers ─── */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function getToken(req) {
+  const h = req.headers.authorization || '';
+  return h.startsWith('Bearer ') ? h.slice(7) : null;
+}
+
 function requireAdmin(req, res, next) {
-  const authHeader = req.headers.authorization || '';
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'No token provided' });
-  }
+  const token = getToken(req);
+  if (!token) return res.status(401).json({ success: false, message: 'No token provided' });
   try {
     jwt.verify(token, JWT_SECRET);
     next();
@@ -89,114 +58,53 @@ function requireAdmin(req, res, next) {
   }
 }
 
-/* ─── Simple JSON file "database" ───────────── */
-const DATA_DIR = path.join(__dirname, 'data');
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR);
-
-function readDB(file) {
-  const fp = path.join(DATA_DIR, file);
-  if (!fs.existsSync(fp)) return [];
-  return JSON.parse(fs.readFileSync(fp, 'utf-8'));
+// Convert DB row (snake_case) to the shape the frontend expects (camelCase)
+function toPost(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    slug: row.slug,
+    title: row.title,
+    category: row.category,
+    emoji: row.emoji,
+    author: row.author,
+    readTime: row.read_time,
+    date: row.date,
+    excerpt: row.excerpt,
+    body: row.body,
+    featured: row.featured,
+    views: row.views,
+    published: row.published,
+  };
 }
 
-function writeDB(file, data) {
-  fs.writeFileSync(path.join(DATA_DIR, file), JSON.stringify(data, null, 2));
-}
+// Convert frontend fields to DB columns
+const POST_FIELD_MAP = {
+  title: 'title',
+  category: 'category',
+  emoji: 'emoji',
+  author: 'author',
+  readTime: 'read_time',
+  date: 'date',
+  excerpt: 'excerpt',
+  body: 'body',
+  featured: 'featured',
+  views: 'views',
+  published: 'published',
+  slug: 'slug',
+};
 
-function quoteCsvCell(value) {
-  if (value === undefined || value === null) return '';
-  return `"${String(value).replace(/"/g, '""')}"`;
-}
-
-function appendContactCsv(entry) {
-  const csvPath = path.join(DATA_DIR, 'contacts.csv');
-  const header = 'id,firstName,lastName,email,subject,message,receivedAt,read\n';
-  if (!fs.existsSync(csvPath)) {
-    fs.writeFileSync(csvPath, header, 'utf-8');
+function toRow(body) {
+  const row = {};
+  for (const [key, col] of Object.entries(POST_FIELD_MAP)) {
+    if (body[key] !== undefined) row[col] = body[key];
   }
-  const row = [
-    entry.id,
-    entry.firstName,
-    entry.lastName,
-    entry.email,
-    entry.subject,
-    entry.message,
-    entry.receivedAt,
-    entry.read,
-  ].map(quoteCsvCell).join(',') + '\n';
-  fs.appendFileSync(csvPath, row, 'utf-8');
+  return row;
 }
 
-/* ─── Seed posts if empty ────────────────────── */
-function seedPosts() {
-  if (readDB('posts.json').length > 0) return;
-  const posts = [
-    {
-      id: 1, slug: 'small-language-models',
-      title: 'The Quiet Revolution of Small Language Models',
-      category: 'Technology', emoji: '🤖',
-      author: 'Priya Sharma', readTime: '7 min',
-      date: '2025-06-10',
-      excerpt: 'Big AI grabs headlines, but the real shift is happening at the edge.',
-      body: '<p>Every week, another headline announces the latest trillion-parameter behemoth...',
-      featured: true, views: 3241, published: true,
-    },
-    {
-      id: 2, slug: 'brutalist-web-design',
-      title: 'Why Brutalist Web Design Is Making a Comeback',
-      category: 'Design', emoji: '🏗️',
-      author: 'Arjun Mehta', readTime: '5 min',
-      date: '2025-06-08',
-      excerpt: 'Raw, ugly, and deliberately uncomfortable — brutalism is challenging everything.',
-      body: '<p>In 2015, brutalist web design was a punchline...',
-      featured: false, views: 1890, published: true,
-    },
-    {
-      id: 3, slug: 'disappearing-third-places',
-      title: 'The Last Cafes: How Third Places Are Disappearing',
-      category: 'Culture', emoji: '☕',
-      author: 'Leila Nair', readTime: '9 min',
-      date: '2025-06-05',
-      excerpt: 'We are losing the spaces where community happens.',
-      body: '<p>Ray Oldenburg\'s concept of the "third place"...',
-      featured: true, views: 5120, published: true,
-    },
-    {
-      id: 4, slug: 'crispr-at-10',
-      title: 'CRISPR at 10: What We Got Right, What We Missed',
-      category: 'Science', emoji: '🧬',
-      author: 'Dr. Kavya Rao', readTime: '11 min',
-      date: '2025-06-02',
-      excerpt: 'A decade after CRISPR entered the clinic, we take stock.',
-      body: '<p>When Jennifer Doudna and Emmanuelle Charpentier described CRISPR...',
-      featured: false, views: 2870, published: true,
-    },
-    {
-      id: 5, slug: 'daily-writing-practice',
-      title: 'How to Build a Daily Writing Practice That Actually Sticks',
-      category: 'Life', emoji: '📝',
-      author: 'Arjun Mehta', readTime: '6 min',
-      date: '2025-05-30',
-      excerpt: 'Most writing routines fail in week two. Here\'s what actually works.',
-      body: '<p>Jerry Seinfeld\'s calendar method. Morning pages...',
-      featured: false, views: 4310, published: true,
-    },
-    {
-      id: 6, slug: 'founders-trap',
-      title: "The Founder's Trap: When Vision Becomes Blindness",
-      category: 'Business', emoji: '💼',
-      author: 'Priya Sharma', readTime: '8 min',
-      date: '2025-05-27',
-      excerpt: "The qualities that make founders successful can also destroy companies.",
-      body: '<p>There\'s a particular kind of cognitive distortion that affects brilliant founders...',
-      featured: false, views: 1560, published: true,
-    },
-  ];
-  writeDB('posts.json', posts);
-  console.log('✓ Seeded posts.json with', posts.length, 'articles');
+function slugify(text) {
+  return String(text).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 }
-
-seedPosts();
 
 /* ═══════════════════════════════════════════════
    ADMIN LOGIN
@@ -209,7 +117,7 @@ app.post('/api/admin/login', async (req, res) => {
   if (username !== ADMIN_USER) {
     return res.status(401).json({ success: false, message: 'Invalid credentials' });
   }
-  const valid = await bcrypt.compare(password, ADMIN_PASS_HASH);
+  const valid = await bcrypt.compare(password || '', ADMIN_PASS_HASH);
   if (!valid) {
     return res.status(401).json({ success: false, message: 'Invalid credentials' });
   }
@@ -220,263 +128,323 @@ app.post('/api/admin/login', async (req, res) => {
 /* ═══════════════════════════════════════════════
    POSTS API
    ═══════════════════════════════════════════════ */
-// GET /api/posts  — list all posts with optional filters (public)
-// Use ?admin=true (requires a valid admin token) to get ALL posts including drafts
-app.get('/api/posts', (req, res) => {
-  const allPostsRaw = readDB('posts.json');
 
-  let wantsAdminView = req.query.admin === 'true';
-  if (wantsAdminView) {
-    // Verify the token even for this GET route, since admin=true reveals drafts
-    const authHeader = req.headers.authorization || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    try {
-      jwt.verify(token, JWT_SECRET);
-    } catch {
-      wantsAdminView = false; // fall back to public view if token invalid/missing
+// GET /api/posts — public; ?admin=true with valid token shows drafts
+app.get('/api/posts', async (req, res) => {
+  try {
+    let wantsAdminView = req.query.admin === 'true';
+    if (wantsAdminView) {
+      try {
+        jwt.verify(getToken(req) || '', JWT_SECRET);
+      } catch {
+        wantsAdminView = false;
+      }
     }
-  }
 
-  let posts = wantsAdminView ? allPostsRaw : allPostsRaw.filter(p => p.published);
-  const { category, search, featured, limit, sort } = req.query;
+    let query = supabase.from('posts').select('*');
+    if (!wantsAdminView) query = query.eq('published', true);
 
-  if (category && category !== 'All') {
-    posts = posts.filter(p => p.category === category);
-  }
-  if (search) {
-    const q = search.toLowerCase();
-    posts = posts.filter(p =>
-      p.title.toLowerCase().includes(q) ||
-      p.excerpt.toLowerCase().includes(q) ||
-      p.author.toLowerCase().includes(q)
-    );
-  }
-  if (featured === 'true') {
-    posts = posts.filter(p => p.featured);
-  }
-  if (sort === 'views') {
-    posts.sort((a, b) => b.views - a.views);
-  } else {
-    posts.sort((a, b) => new Date(b.date) - new Date(a.date));
-  }
+    const { category, search, featured, limit, sort } = req.query;
 
-  if (limit) posts = posts.slice(0, parseInt(limit));
+    if (category && category !== 'All') query = query.eq('category', category);
+    if (featured === 'true') query = query.eq('featured', true);
+    if (search) {
+      const q = String(search).replace(/[%,]/g, '');
+      query = query.or(`title.ilike.%${q}%,excerpt.ilike.%${q}%,author.ilike.%${q}%`);
+    }
 
-  res.json({ success: true, count: posts.length, data: posts });
+    if (sort === 'views') query = query.order('views', { ascending: false });
+    else query = query.order('date', { ascending: false });
+
+    if (limit) query = query.limit(parseInt(limit, 10));
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const posts = data.map(toPost);
+    res.json({ success: true, count: posts.length, data: posts });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to load posts' });
+  }
 });
 
-// GET /api/posts/:id  — single post (also increments view count) — public
-app.get('/api/posts/:id', (req, res) => {
-  const posts = readDB('posts.json');
-  const idx   = posts.findIndex(p => p.id === parseInt(req.params.id) || p.slug === req.params.id);
-  if (idx === -1) return res.status(404).json({ success: false, message: 'Post not found' });
+// GET /api/posts/:idOrSlug — single post, increments views
+app.get('/api/posts/:idOrSlug', async (req, res) => {
+  try {
+    const key = req.params.idOrSlug;
+    const isId = /^\d+$/.test(key);
 
-  posts[idx].views = (posts[idx].views || 0) + 1;
-  writeDB('posts.json', posts);
+    const { data: post, error } = await supabase
+      .from('posts')
+      .select('*')
+      .eq(isId ? 'id' : 'slug', isId ? Number(key) : key)
+      .maybeSingle();
+    if (error) throw error;
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
 
-  res.json({ success: true, data: posts[idx] });
-});
+    // Increment views
+    await supabase.from('posts').update({ views: (post.views || 0) + 1 }).eq('id', post.id);
 
-// POST /api/posts  — create a new post (admin only)
-app.post('/api/posts', requireAdmin, (req, res) => {
-  const { title, category, emoji, author, readTime, excerpt, body, featured } = req.body;
-  if (!title || !category || !excerpt) {
-    return res.status(400).json({ success: false, message: 'title, category, and excerpt are required' });
+    res.json({ success: true, data: toPost({ ...post, views: (post.views || 0) + 1 }) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to load post' });
   }
-
-  const posts = readDB('posts.json');
-  const newPost = {
-    id: posts.length ? Math.max(...posts.map(p=>p.id)) + 1 : 1,
-    slug: title.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''),
-    title, category, emoji: emoji || '📄',
-    author: author || 'Anonymous',
-    readTime: readTime || '5 min',
-    date: new Date().toISOString().split('T')[0],
-    excerpt, body: body || '',
-    featured: featured === true || featured === 'true',
-    views: 0, published: true,
-  };
-
-  posts.push(newPost);
-  writeDB('posts.json', posts);
-  res.status(201).json({ success: true, data: newPost });
 });
 
-// PUT /api/posts/:id  — update a post (admin only)
-app.put('/api/posts/:id', requireAdmin, (req, res) => {
-  const posts = readDB('posts.json');
-  const idx   = posts.findIndex(p => p.id === parseInt(req.params.id));
-  if (idx === -1) return res.status(404).json({ success: false, message: 'Post not found' });
+// POST /api/posts — create (admin)
+app.post('/api/posts', requireAdmin, async (req, res) => {
+  try {
+    const { title, category, excerpt } = req.body;
+    if (!title || !category || !excerpt) {
+      return res.status(400).json({ success: false, message: 'title, category, and excerpt are required' });
+    }
 
-  posts[idx] = { ...posts[idx], ...req.body, id: posts[idx].id };
-  writeDB('posts.json', posts);
-  res.json({ success: true, data: posts[idx] });
+    const row = {
+      ...toRow(req.body),
+      slug: req.body.slug || slugify(title),
+      emoji: req.body.emoji || '📄',
+      author: req.body.author || 'Anonymous',
+      read_time: req.body.readTime || '5 min',
+      date: new Date().toISOString().split('T')[0],
+      body: req.body.body || '',
+      featured: req.body.featured === true || req.body.featured === 'true',
+      views: 0,
+      published: true,
+    };
+    delete row.readTime;
+
+    const { data, error } = await supabase.from('posts').insert(row).select().single();
+    if (error) throw error;
+
+    res.status(201).json({ success: true, data: toPost(data) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to create post' });
+  }
 });
 
-// DELETE /api/posts/:id  — delete (soft-delete by setting published=false) (admin only)
-app.delete('/api/posts/:id', requireAdmin, (req, res) => {
-  const posts = readDB('posts.json');
-  const idx   = posts.findIndex(p => p.id === parseInt(req.params.id));
-  if (idx === -1) return res.status(404).json({ success: false, message: 'Post not found' });
+// PUT /api/posts/:id — update (admin)
+app.put('/api/posts/:id', requireAdmin, async (req, res) => {
+  try {
+    const row = toRow(req.body);
+    delete row.id;
 
-  posts[idx].published = false;
-  writeDB('posts.json', posts);
-  res.json({ success: true, message: 'Post archived successfully' });
+    const { data, error } = await supabase
+      .from('posts')
+      .update(row)
+      .eq('id', Number(req.params.id))
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ success: false, message: 'Post not found' });
+
+    res.json({ success: true, data: toPost(data) });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to update post' });
+  }
+});
+
+// DELETE /api/posts/:id — soft delete (admin)
+app.delete('/api/posts/:id', requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .update({ published: false })
+      .eq('id', Number(req.params.id))
+      .select()
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ success: false, message: 'Post not found' });
+
+    res.json({ success: true, message: 'Post archived successfully' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to archive post' });
+  }
 });
 
 /* ═══════════════════════════════════════════════
    CONTACT FORM API
    ═══════════════════════════════════════════════ */
-app.post('/api/contact', (req, res) => {
-  const { firstName, lastName, email, subject, message } = req.body;
 
-  // Validation
-  if (!firstName || !email || !subject || !message) {
-    return res.status(400).json({ success: false, message: 'All fields are required.' });
+app.post('/api/contact', async (req, res) => {
+  try {
+    const { firstName, lastName, email, subject, message } = req.body;
+    if (!firstName || !email || !subject || !message) {
+      return res.status(400).json({ success: false, message: 'All fields are required.' });
+    }
+    if (!EMAIL_RE.test(email)) {
+      return res.status(400).json({ success: false, message: 'Invalid email address.' });
+    }
+
+    const { error } = await supabase.from('contacts').insert({
+      first_name: firstName,
+      last_name: lastName || '',
+      email,
+      subject,
+      message,
+      read: false,
+    });
+    if (error) throw error;
+
+    console.log(`📧  New contact from ${firstName} ${lastName || ''} <${email}> — "${subject}"`);
+    res.status(200).json({
+      success: true,
+      message: "Your message has been received! We'll reply within 24–48 hours.",
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to submit message.' });
   }
-  const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRe.test(email)) {
-    return res.status(400).json({ success: false, message: 'Invalid email address.' });
-  }
-
-  // Save to local store
-  const contacts = readDB('contacts.json');
-  const entry = {
-    id: Date.now(),
-    firstName, lastName, email, subject, message,
-    receivedAt: new Date().toISOString(),
-    read: false,
-  };
-  contacts.push(entry);
-  writeDB('contacts.json', contacts);
-  appendContactCsv(entry);
-
-  // ─── EMAIL (configure SMTP in production) ─────────────────────
-  // const nodemailer = require('nodemailer');
-  // const transporter = nodemailer.createTransport({ host:'smtp.example.com', port:587, auth:{user:'',pass:''} });
-  // transporter.sendMail({ from:'noreply@bolgerr.com', to:'hello@bolgerr.com', subject:`[Bolgerr] ${subject}`, text:message });
-  // ──────────────────────────────────────────────────────────────
-
-  console.log(`📧  New contact from ${firstName} ${lastName} <${email}> — "${subject}"`);
-  res.status(200).json({ success: true, message: "Your message has been received! We'll reply within 24–48 hours." });
 });
 
-// GET /api/contacts  — admin: list all contacts (admin only)
-app.get('/api/contacts', requireAdmin, (req, res) => {
-  const contacts = readDB('contacts.json');
-  res.json({ success: true, count: contacts.length, data: contacts });
+// GET /api/contacts — admin
+app.get('/api/contacts', requireAdmin, async (req, res) => {
+  const { data, error } = await supabase
+    .from('contacts')
+    .select('*')
+    .order('received_at', { ascending: false });
+  if (error) return res.status(500).json({ success: false, message: 'Failed to load contacts' });
+  res.json({ success: true, count: data.length, data });
 });
 
-// PATCH /api/contacts/:id/read  — mark one contact as read (admin only)
-app.patch('/api/contacts/:id/read', requireAdmin, (req, res) => {
-  const contacts = readDB('contacts.json');
-  const idx = contacts.findIndex(c => c.id === parseInt(req.params.id));
-  if (idx === -1) return res.status(404).json({ success: false, message: 'Contact not found' });
-  contacts[idx].read = true;
-  writeDB('contacts.json', contacts);
+// PATCH /api/contacts/:id/read — admin
+app.patch('/api/contacts/:id/read', requireAdmin, async (req, res) => {
+  const { data, error } = await supabase
+    .from('contacts')
+    .update({ read: true })
+    .eq('id', Number(req.params.id))
+    .select()
+    .maybeSingle();
+  if (error) return res.status(500).json({ success: false, message: 'Update failed' });
+  if (!data) return res.status(404).json({ success: false, message: 'Contact not found' });
   res.json({ success: true });
 });
 
-// PATCH /api/contacts/mark-all-read  — mark all contacts as read (admin only)
-app.patch('/api/contacts/mark-all-read', requireAdmin, (req, res) => {
-  const contacts = readDB('contacts.json');
-  contacts.forEach(c => { c.read = true; });
-  writeDB('contacts.json', contacts);
+// PATCH /api/contacts/mark-all-read — admin
+app.patch('/api/contacts/mark-all-read', requireAdmin, async (req, res) => {
+  const { error } = await supabase.from('contacts').update({ read: true }).eq('read', false);
+  if (error) return res.status(500).json({ success: false, message: 'Update failed' });
   res.json({ success: true });
 });
 
 /* ═══════════════════════════════════════════════
    NEWSLETTER API
    ═══════════════════════════════════════════════ */
-app.post('/api/newsletter', (req, res) => {
-  const { email } = req.body;
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
+
+app.post('/api/newsletter', async (req, res) => {
+  try {
+    const email = (req.body.email || '').trim();
+    if (!email || !EMAIL_RE.test(email)) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid email address.' });
+    }
+
+    const { error } = await supabase.from('subscribers').insert({ email: email.toLowerCase() });
+    if (error) {
+      // 23505 = unique violation in Postgres
+      if (error.code === '23505') {
+        return res.status(409).json({ success: false, message: "You're already subscribed! 🎉" });
+      }
+      throw error;
+    }
+
+    console.log(`✉️  New subscriber: ${email}`);
+    res.status(201).json({
+      success: true,
+      message: 'Welcome to Bolgerr! Check your inbox for a confirmation.',
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Subscription failed.' });
   }
-
-  const subs = readDB('subscribers.json');
-  if (subs.find(s => s.email.toLowerCase() === email.toLowerCase())) {
-    return res.status(409).json({ success: false, message: 'You\'re already subscribed! 🎉' });
-  }
-
-  subs.push({ email, subscribedAt: new Date().toISOString(), active: true });
-  writeDB('subscribers.json', subs);
-
-  console.log(`✉️  New subscriber: ${email}`);
-  res.status(201).json({ success: true, message: 'Welcome to Bolgerr! Check your inbox for a confirmation.' });
 });
 
-// GET /api/subscribers  — admin view (admin only)
-app.get('/api/subscribers', requireAdmin, (req, res) => {
-  const subs = readDB('subscribers.json');
-  res.json({ success: true, count: subs.length, data: subs });
+// GET /api/subscribers — admin
+app.get('/api/subscribers', requireAdmin, async (req, res) => {
+  const { data, error } = await supabase.from('subscribers').select('*');
+  if (error) return res.status(500).json({ success: false, message: 'Failed to load subscribers' });
+  res.json({ success: true, count: data.length, data });
 });
 
 /* ═══════════════════════════════════════════════
    STATS & CATEGORIES API
    ═══════════════════════════════════════════════ */
-app.get('/api/stats', (req, res) => {
-  const posts = readDB('posts.json').filter(p => p.published);
-  const subs  = readDB('subscribers.json');
-  const totalViews = posts.reduce((sum, p) => sum + (p.views || 0), 0);
-  const cats  = [...new Set(posts.map(p => p.category))];
 
-  res.json({
-    success: true,
-    data: {
-      totalPosts: posts.length,
-      totalViews,
-      totalSubscribers: subs.length,
-      categories: cats.length,
-      mostRead: posts.sort((a,b)=>b.views-a.views).slice(0,3).map(p=>({id:p.id,title:p.title,views:p.views})),
-    }
-  });
+app.get('/api/stats', async (req, res) => {
+  try {
+    const { data: posts, error } = await supabase
+      .from('posts')
+      .select('id, title, views, category')
+      .eq('published', true);
+    if (error) throw error;
+
+    const { count: subCount } = await supabase
+      .from('subscribers')
+      .select('*', { count: 'exact', head: true });
+
+    const totalViews = posts.reduce((sum, p) => sum + (p.views || 0), 0);
+    const categories = new Set(posts.map(p => p.category));
+    const mostRead = [...posts]
+      .sort((a, b) => b.views - a.views)
+      .slice(0, 3)
+      .map(p => ({ id: p.id, title: p.title, views: p.views }));
+
+    res.json({
+      success: true,
+      data: {
+        totalPosts: posts.length,
+        totalViews,
+        totalSubscribers: subCount || 0,
+        categories: categories.size,
+        mostRead,
+      },
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: 'Failed to load stats' });
+  }
 });
 
-app.get('/api/categories', (req, res) => {
-  const posts = readDB('posts.json').filter(p => p.published);
-  const catCount = {};
-  posts.forEach(p => { catCount[p.category] = (catCount[p.category]||0)+1; });
-  const categories = Object.entries(catCount).map(([name,count])=>({name,count})).sort((a,b)=>b.count-a.count);
+app.get('/api/categories', async (req, res) => {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('category')
+    .eq('published', true);
+  if (error) return res.status(500).json({ success: false, message: 'Failed to load categories' });
+
+  const counts = {};
+  data.forEach(({ category }) => {
+    counts[category] = (counts[category] || 0) + 1;
+  });
+  const categories = Object.entries(counts)
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
   res.json({ success: true, data: categories });
 });
 
 /* ═══════════════════════════════════════════════
-   SERVE FRONTEND (SPA fallback)
+   FRONTEND FALLBACK & ERRORS
    ═══════════════════════════════════════════════ */
+
+// Serve index.html for non-API routes (SPA)
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-/* ─── 404 Handler ───────────────────────────── */
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Endpoint not found' });
 });
 
-/* ─── Error Handler ─────────────────────────── */
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ success: false, message: 'Internal server error' });
 });
 
-/* ─── Start ─────────────────────────────────── */
-(async () => {
-  try {
-    const RUN_PORT = await findAvailablePort(PORT);
-    app.listen(RUN_PORT, () => {
-      console.log(`\n🚀  Bolgerr backend running at http://localhost:${RUN_PORT}`);
-      console.log(`📖  API docs:`);
-      console.log(`     POST /api/admin/login        Admin login (returns token)`);
-      console.log(`     GET  /api/posts              List all posts`);
-      console.log(`     GET  /api/posts/:id          Single post`);
-      console.log(`     POST /api/posts              Create post (auth required)`);
-      console.log(`     POST /api/contact            Submit contact form`);
-      console.log(`     POST /api/newsletter         Subscribe to newsletter`);
-      console.log(`     GET  /api/stats              Site statistics`);
-      console.log(`     GET  /api/categories         All categories\n`);
-    });
-  } catch (err) {
-    console.error('Failed to start server:', err);
-    process.exit(1);
-  }
-})();
+/* ─── Start ─── */
+app.listen(PORT, () => {
+  console.log(`\n🚀  Bolgerr backend running on port ${PORT}`);
+});

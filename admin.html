@@ -513,7 +513,7 @@ tr:hover td { background:rgba(91,79,233,.03); }
 <div class="modal-overlay" id="deleteModal">
   <div class="modal">
     <h2>Delete this post?</h2>
-    <p>This will archive the post and it will no longer appear on the site. You can restore it from the server if needed.</p>
+    <p>This will permanently delete the post and it will no longer appear on the site.</p>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('deleteModal')">Cancel</button>
       <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
@@ -525,10 +525,9 @@ tr:hover td { background:rgba(91,79,233,.03); }
 // ══════════════════════════════════
 //  CONFIG
 //  NOTE: There is no username/password stored here anymore.
-//  Login is verified by the server at /api/admin/login.
-//  Update API to your real deployed backend URL (must be https://) before going live.
+//  Login is verified by the Cloudflare Worker at /api/admin/login.
 // ══════════════════════════════════
-const API = 'https://bolg-lhti.onrender.com';
+const API = 'https://bolgerr-api.shauryabolgerr.workers.dev';
 
 // ══════════════════════════════════
 //  AUTH
@@ -557,7 +556,7 @@ async function doLogin() {
       err.textContent = data.message || 'Incorrect username or password.';
     }
   } catch {
-    err.textContent = 'Cannot reach server. Make sure the backend is running.';
+    err.textContent = 'Cannot reach server. Please try again in a moment.';
   } finally {
     btn.disabled = false;
     btn.textContent = 'Sign In →';
@@ -806,7 +805,7 @@ async function savePost(payload) {
       showToastA(result.message || 'Failed to save post.', 'error');
     }
   } catch {
-    showToastA('Cannot reach server. Make sure backend is running.', 'error');
+    showToastA('Cannot reach server. Please try again in a moment.', 'error');
   }
 }
 
@@ -824,7 +823,7 @@ async function confirmDelete() {
     if (res.status === 401) { doLogout(); return; }
     const data = await res.json();
     if (data.success) {
-      showToastA('Post archived.','success');
+      showToastA('Post deleted.','success');
       await fetchAllPosts();
       renderPosts();
     } else { showToastA('Delete failed.','error'); }
