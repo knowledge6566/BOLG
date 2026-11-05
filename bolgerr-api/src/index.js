@@ -80,7 +80,10 @@ async function createPost(request, env) {
     `INSERT INTO posts (title, excerpt, body, author, readTime, category, emoji, coverImage, featured, published)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).bind(...postValues(p)).run();
-  return json(request, { success: true, id: r.meta.last_row_id }, 201);
+  const row = await env.DB.prepare("SELECT * FROM posts WHERE id = ?")
+    .bind(r.meta.last_row_id)
+    .first();
+  return json(request, { success: true, data: toPost(row) }, 201);
 }
 
 async function updatePost(request, env, id) {

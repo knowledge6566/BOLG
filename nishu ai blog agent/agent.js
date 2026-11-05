@@ -227,9 +227,8 @@ async function loginToBlog() {
    * The API is on the same server.
    */
 
-  const baseUrl = new URL(
-    process.env.BLOG_ADMIN_URL
-  ).origin;
+  const baseUrl = process.env.BLOG_API_URL ||
+    new URL(process.env.BLOG_ADMIN_URL).origin;
 
   const loginUrl = `${baseUrl}/api/admin/login`;
 

@@ -787,24 +787,24 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
 <script>
 /* ====== DATA STORE ====== */
 /* ====== DATA STORE ====== */
+/* ====== DATA STORE ====== */
+const API = 'https://bolgerr-api.shauryabolgerr.workers.dev';
+
 let POSTS = [];
+let currentPage = 'home';
+let currentFilter = 'All';
 
 async function loadPosts() {
-  const endpoints = [
-    'https://bolg-lhti.onrender.com/api/posts',
-  ];
-  for (const url of endpoints) {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) continue;
-      const data = await res.json();
-      if (data.success && data.data?.length) {
-        POSTS = data.data;
-        return;
-      }
-    } catch {}
+  try {
+    const res = await fetch(`${API}/api/posts`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.success && data.data?.length) {
+      POSTS = data.data;
+    }
+  } catch (err) {
+    console.warn('Could not load posts from server.', err);
   }
-  console.warn('Could not load posts from server.');
 }
 
 /* ====== NAVIGATION ====== */
@@ -977,7 +977,7 @@ function submitContact(event) {
 
   const payload = { firstName: fname, lastName: lname, email, subject, message };
   const endpoints = [
-    'https://bolg-lhti.onrender.com/api/contact',
+        `${API}/api/contact`,
   ];
 
   const submitTo = async url => {
