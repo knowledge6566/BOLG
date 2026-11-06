@@ -8,5 +8,16 @@
       "database_name": "blogs",
       "database_id": "bd6caeb5-b44e-4529-91d5-0ecb846d9cbd"
     }
-  ]
+  ],
+  "triggers": {
+    "crons": ["30 3 * * *", "30 13 * * *"]
+  },
+  "vars": {
+    "BLOG_CATEGORIES": "Technology,Design,Culture,Science,Life,Business",
+    "ARTICLE_WORDS": "1200",
+    "BLOG_AUTHOR": "Nishu Blogs"
+  },
+  "observability": {
+    "enabled": true
+  }
 }

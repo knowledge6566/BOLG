@@ -1,3 +1,31 @@
+const CP1252 = {
+  8364: 128, 8218: 130, 402: 131, 8222: 132, 8230: 133, 8224: 134, 8225: 135,
+  710: 136, 8240: 137, 352: 138, 8249: 139, 338: 140, 381: 142, 8216: 145,
+  8217: 146, 8220: 147, 8221: 148, 8226: 149, 8211: 150, 8212: 151, 8209: 145,
+  732: 152, 8482: 153, 353: 154, 8250: 155, 339: 156, 382: 158, 376: 159,
+};
+
+// Matches runs of characters that could be leftover UTF-8 bytes
+const MOJIBAKE_RUN = /[\u00A0-\u00FF\u0152\u0153\u0160\u0161\u0178\u017D\u017E\u0192\u02C6\u02DC\u2011\u2013\u2014\u2018\u2019\u201A\u201C\u201D\u201E\u2020\u2021\u2022\u2026\u2030\u2039\u203A\u20AC\u2122]+/g;
+
+// Repairs broken characters one run at a time, leaving normal text untouched
+export function fixMojibake(s) {
+  if (!s) return "";
+  return s.replace(MOJIBAKE_RUN, run => {
+    if (!/[\u00C2-\u00F4]/.test(run)) return run;
+    const bytes = [];
+    for (const ch of run) {
+      const cp = ch.codePointAt(0);
+      bytes.push(CP1252[cp] !== undefined ? CP1252[cp] : cp);
+    }
+    try {
+      return new TextDecoder("utf-8", { fatal: true }).decode(new Uint8Array(bytes));
+    } catch {
+      return run;
+    }
+  });
+}
+
 function parseJson(text) {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fenced) text = fenced[1];
@@ -97,6 +125,10 @@ Allowed categories: ${categories.join(", ")}
   if (!text) throw new Error("OpenRouter returned no content.");
 
   const article = parseJson(text);
+  article.title = fixMojibake(article.title);
+  article.excerpt = fixMojibake(article.excerpt);
+  article.contentMarkdown = fixMojibake(article.contentMarkdown);
+
   if (!article.title || !article.excerpt || !article.contentMarkdown) {
     throw new Error("AI returned an incomplete article.");
   }

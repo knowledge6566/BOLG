@@ -1,5 +1,4 @@
-import { publishDailyArticle } from "./agent.js";
-
+import { publishDailyArticle, fixMojibake } from "./agent.js";
 const ALLOWED_ORIGINS = [
   "https://knowledge6566.github.io",
   "https://nishublogs.online",
@@ -128,7 +127,22 @@ async function markAllRead(request, env) {
   await env.DB.prepare("UPDATE contacts SET isRead = 1").run();
   return json(request, { success: true });
 }
-
+async function fixOldPosts(request, env) {
+  const { results } = await env.DB.prepare("SELECT id, title, excerpt, body FROM posts").all();
+  let fixed = 0;
+  for (const r of results) {
+    const title = fixMojibake(r.title);
+    const excerpt = fixMojibake(r.excerpt || "");
+    const body = fixMojibake(r.body || "");
+    if (title !== r.title || excerpt !== (r.excerpt || "") || body !== (r.body || "")) {
+      await env.DB.prepare("UPDATE posts SET title=?, excerpt=?, body=? WHERE id=?")
+        .bind(title, excerpt, body, r.id)
+        .run();
+      fixed++;
+    }
+  }
+  return json(request, { success: true, fixed });
+}
 // ---------- Router ----------
 
 export default {
@@ -172,7 +186,10 @@ export default {
       if (pathname === "/api/contacts" && method === "GET") return await getContacts(request, env);
       if (contactReadId && method === "PATCH") return await markRead(request, env, contactReadId);
       if (pathname === "/api/contacts/mark-all-read" && method === "PATCH") return await markAllRead(request, env);
-
+      if (pathname === "/api/admin/fix-encoding" && method === "POST") {
+        if (!isAuthorized(request, env)) return json(request, { success: false, message: "Unauthorized" }, 401);
+        return await fixOldPosts(request, env);
+      }
       // Manual test: publishes one article immediately
       if (pathname === "/api/agent/run" && method === "POST") {
         const title = await publishDailyArticle(env);

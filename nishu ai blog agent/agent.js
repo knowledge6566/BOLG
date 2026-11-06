@@ -1,125 +1,75 @@
-import "dotenv/config";
-import axios from "axios";
-import fs from "node:fs/promises";
-import path from "node:path";
+const CP1252 = {
+  8364: 128, 8218: 130, 402: 131, 8222: 132, 8230: 133, 8224: 134, 8225: 135,
+  710: 136, 8240: 137, 352: 138, 8249: 139, 338: 140, 381: 142, 8216: 145,
+  8217: 146, 8220: 147, 8221: 148, 8226: 149, 8211: 150, 8212: 151, 8209: 145,
+  732: 152, 8482: 153, 353: 154, 8250: 155, 339: 156, 382: 158, 376: 159,
+};
 
-const required = [
-  "OPENROUTER_API_KEY",
-  "BLOG_ADMIN_URL",
-  "ADMIN_USERNAME",
-  "ADMIN_PASSWORD"
-];
+// Matches runs of characters that could be leftover UTF-8 bytes
+const MOJIBAKE_RUN = /[\u00A0-\u00FF\u0152\u0153\u0160\u0161\u0178\u017D\u017E\u0192\u02C6\u02DC\u2011\u2013\u2014\u2018\u2019\u201A\u201C\u201D\u201E\u2020\u2021\u2022\u2026\u2030\u2039\u203A\u20AC\u2122]+/g;
 
-for (const key of required) {
-  if (!process.env[key]) {
-    throw new Error(`Missing ${key} in .env`);
-  }
+// Repairs broken characters one run at a time, leaving normal text untouched
+export function fixMojibake(s) {
+  if (!s) return "";
+  return s.replace(MOJIBAKE_RUN, run => {
+    if (!/[\u00C2-\u00F4]/.test(run)) return run;
+    const bytes = [];
+    for (const ch of run) {
+      const cp = ch.codePointAt(0);
+      bytes.push(CP1252[cp] !== undefined ? CP1252[cp] : cp);
+    }
+    try {
+      return new TextDecoder("utf-8", { fatal: true }).decode(new Uint8Array(bytes));
+    } catch {
+      return run;
+    }
+  });
 }
 
-const historyFile = path.resolve(
-  process.env.HISTORY_FILE || "./data/topic-history.json"
-);
 
-async function readHistory() {
-  try {
-    return JSON.parse(await fs.readFile(historyFile, "utf8"));
-  } catch {
-    return [];
-  }
-}
-
-async function saveHistory(history) {
-  await fs.mkdir(path.dirname(historyFile), { recursive: true });
-  await fs.writeFile(
-    historyFile,
-    JSON.stringify(history.slice(-100), null, 2)
-  );
-}
-
-function cleanJson(text) {
+function parseJson(text) {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-
-  if (fenced) {
-    text = fenced[1];
-  }
-
+  if (fenced) text = fenced[1];
   const first = text.indexOf("{");
   const last = text.lastIndexOf("}");
-
-  if (first === -1 || last === -1) {
-    throw new Error("AI did not return JSON.");
-  }
-
-  let json = text.slice(first, last + 1);
-
-  try {
-    return JSON.parse(json);
-  } catch (error) {
-    console.error("AI returned invalid JSON:");
-    console.error(json);
-    throw error;
-  }
+  if (first === -1 || last === -1) throw new Error("AI did not return JSON.");
+  return JSON.parse(text.slice(first, last + 1));
 }
 
 function markdownToHtml(md) {
-  let s = md.trim();
-
-  // Escape HTML
-  s = s
+  let s = md.trim()
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
-  // Headings
   s = s.replace(/^### (.+)$/gm, "<h3>$1</h3>");
   s = s.replace(/^## (.+)$/gm, "<h2>$1</h2>");
   s = s.replace(/^# (.+)$/gm, "<h2>$1</h2>");
-
-  // Bold / italic
   s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   s = s.replace(/\*(.+?)\*/g, "<em>$1</em>");
-
-  // Lists
   s = s.replace(/^\s*[-*] (.+)$/gm, "<li>$1</li>");
-  s = s.replace(/(<li>.*<\/li>\n?)+/g, (m) => `<ul>${m}</ul>`);
+  s = s.replace(/(<li>.*<\/li>\n?)+/g, m => `<ul>${m}</ul>`);
 
-  const blocks = s
+  return s
     .split(/\n{2,}/)
-    .map((x) => x.trim())
-    .filter(Boolean);
-
-  return blocks
-    .map((block) => {
-      if (/^<(h2|h3|ul|ol|blockquote)/.test(block)) {
-        return block;
-      }
-
-      return `<p>${block.replace(/\n/g, "<br>")}</p>`;
-    })
+    .map(x => x.trim())
+    .filter(Boolean)
+    .map(block => /^<(h2|h3|ul|ol|blockquote)/.test(block)
+      ? block
+      : `<p>${block.replace(/\n/g, "<br>")}</p>`)
     .join("\n");
 }
 
-async function generateArticle() {
-  const history = await readHistory();
+export async function publishDailyArticle(env) {
+  const categories = (env.BLOG_CATEGORIES || "Technology").split(",").map(s => s.trim());
+  const words = Number(env.ARTICLE_WORDS || 1200);
+  const focus = env.TOPIC_FOCUS || "technology, AI, web development, software, design, internet";
 
-  const focus =
-    process.env.TOPIC_FOCUS ||
-    "technology, AI, web development, software, design, internet";
-
-  const words = Number(process.env.ARTICLE_WORDS || 1200);
-
-  const categories = (
-    process.env.BLOG_CATEGORIES ||
-    "Technology"
-  )
-    .split(",")
-    .map((s) => s.trim());
-
-  const previousTopics =
-    history
-      .slice(-30)
-      .map((x, i) => `${i + 1}. ${x.title}`)
-      .join("\n") || "(none)";
+  // Titles of recent posts, so the AI avoids repeating topics
+  const { results } = await env.DB
+    .prepare("SELECT title FROM posts ORDER BY id DESC LIMIT 30")
+    .all();
+  const previousTopics = results.map((r, i) => `${i + 1}. ${r.title}`).join("\n") || "(none)";
 
   const prompt = `
 You are the editorial AI for Nishu Blogs.
@@ -129,226 +79,75 @@ Choose ONE useful, original topic for today's blog article.
 Main focus:
 ${focus}
 
-Previously used topics:
+Previously used topics (do not repeat these):
 ${previousTopics}
 
 Write approximately ${words} words.
 
-Audience:
-General internet readers.
-
 Rules:
 - Write original content.
-- Do not copy existing articles.
-- Do not invent statistics.
-- Do not invent quotes.
-- Do not invent studies.
+- Do not invent statistics, quotes or studies.
 - Avoid medical, legal and financial advice.
 - Use clear H2 and H3 headings.
 - No title inside contentMarkdown.
-- Make the article useful and engaging.
-- Use natural English.
-- Make the article SEO-friendly without keyword stuffing.
+- Use natural English and make it SEO-friendly without keyword stuffing.
 
-Return ONLY valid JSON.
-
-IMPORTANT:
-Do not put any text before or after the JSON.
-
-Format:
+Return ONLY valid JSON. No text before or after the JSON.
 
 {
   "title": "Article title",
   "excerpt": "Short 1-2 sentence summary",
-  "category": "Technology",
-  "emoji": "🤖",
+  "category": "one of the allowed categories",
+  "emoji": "one emoji",
   "readTime": "6 min",
   "contentMarkdown": "Full article in markdown"
 }
 
-Allowed categories:
-${categories.join(", ")}
+Allowed categories: ${categories.join(", ")}
 `;
 
-  const response = await axios.post(
-    "https://openrouter.ai/api/v1/chat/completions",
-    {
-      model: "openrouter/free",
-      messages: [
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature: 0.7
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
+      "Content-Type": "application/json",
     },
-    {
-      headers: {
-        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json"
-      }
-    }
-  );
+    body: JSON.stringify({
+      model: "openrouter/free",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+    }),
+  });
 
-  const text = response.data?.choices?.[0]?.message?.content;
+  if (!res.ok) throw new Error(`OpenRouter error ${res.status}: ${await res.text()}`);
 
-  if (!text) {
-    throw new Error("OpenRouter returned no AI response.");
-  }
+  const data = await res.json();
+  const text = data.choices?.[0]?.message?.content;
+  if (!text) throw new Error("OpenRouter returned no content.");
 
-  console.log("AI article generated.");
+  const article = parseJson(text);
+  article.title = fixMojibake(article.title);
+  article.excerpt = fixMojibake(article.excerpt);
+  article.contentMarkdown = fixMojibake(article.contentMarkdown);
 
-  const article = cleanJson(text);
-
-  if (
-    !article.title ||
-    !article.excerpt ||
-    !article.contentMarkdown
-  ) {
+  if (!article.title || !article.excerpt || !article.contentMarkdown) {
     throw new Error("AI returned an incomplete article.");
   }
+  if (!categories.includes(article.category)) article.category = categories[0];
 
-  if (!categories.includes(article.category)) {
-    article.category = categories[0];
-  }
+  await env.DB.prepare(
+    `INSERT INTO posts (title, excerpt, body, author, readTime, category, emoji, coverImage, featured, published)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 1)`
+  ).bind(
+    article.title,
+    article.excerpt,
+    markdownToHtml(article.contentMarkdown),
+    env.BLOG_AUTHOR || "Nishu Blogs",
+    article.readTime || "6 min",
+    article.category,
+    article.emoji || "📝",
+    ""
+  ).run();
 
-  article.contentHtml = markdownToHtml(
-    article.contentMarkdown
-  );
-
-  return article;
-}
-
-async function loginToBlog() {
-  /*
-   * BLOG_ADMIN_URL is:
-   * https://nishublogs.online/admin.html/
-   *
-   * The API is on the same server.
-   */
-
-  const baseUrl = process.env.BLOG_API_URL ||
-    new URL(process.env.BLOG_ADMIN_URL).origin;
-
-  const loginUrl = `${baseUrl}/api/admin/login`;
-
-  console.log("Logging into blog API...");
-
-  const response = await axios.post(loginUrl, {
-    username: process.env.ADMIN_USERNAME,
-    password: process.env.ADMIN_PASSWORD
-  });
-
-  if (!response.data?.success || !response.data?.token) {
-    throw new Error(
-      response.data?.message || "Blog login failed."
-    );
-  }
-
-  console.log("Blog API login successful.");
-
-  return {
-    baseUrl,
-    token: response.data.token
-  };
-}
-
-async function publishArticle(article) {
-  const { baseUrl, token } = await loginToBlog();
-
-  const postUrl = `${baseUrl}/api/posts`;
-
-  console.log("Publishing article...");
-
-  const response = await axios.post(
-    postUrl,
-    {
-      title: article.title,
-      category: article.category,
-      emoji: article.emoji || "📝",
-      author: process.env.BLOG_AUTHOR || "Nishu Blogs",
-      readTime: article.readTime || "6 min",
-      excerpt: article.excerpt,
-      body: article.contentHtml,
-      featured: false
-    },
-    {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json"
-      }
-    }
-  );
-
-  if (!response.data?.success) {
-    throw new Error(
-      response.data?.message || "Blog publishing failed."
-    );
-  }
-
-  const post = response.data.data;
-
-  console.log("");
-  console.log("====================================");
-  console.log("ARTICLE PUBLISHED SUCCESSFULLY");
-  console.log("====================================");
-  console.log(`Title: ${post.title}`);
-  console.log(`Category: ${post.category}`);
-  console.log(`Slug: ${post.slug}`);
-  console.log(`Date: ${post.date}`);
-  console.log(`Published: ${post.published}`);
-  console.log("====================================");
-
-  return post;
-}
-
-export async function run({ dryRun = false } = {}) {
-  console.log("");
-  console.log(
-    new Date().toISOString(),
-    dryRun ? "DRY RUN" : "RUN"
-  );
-
-  const article = await generateArticle();
-
-  console.log(`Generated title: ${article.title}`);
-
-  if (dryRun) {
-    console.log("");
-    console.log("DRY RUN COMPLETE");
-    console.log("Article was generated but NOT published.");
-    console.log("");
-    console.log(`Title: ${article.title}`);
-    console.log(`Category: ${article.category}`);
-    console.log(`Read time: ${article.readTime}`);
-    return;
-  }
-
-  const post = await publishArticle(article);
-
-  const history = await readHistory();
-
-  history.push({
-    title: post.title,
-    date: post.date,
-    category: post.category,
-    slug: post.slug
-  });
-
-  await saveHistory(history);
-}
-
-if (
-  process.argv[1] &&
-  process.argv[1].endsWith("agent.js")
-) {
-  run().catch((err) => {
-    console.error("");
-    console.error("AI BLOG AGENT FAILED");
-    console.error("");
-    console.error(
-      err.response?.data || err.message || err
-    );
-    process.exit(1);
-  });
+  return article.title;
 }
