@@ -1,3 +1,5 @@
+import { publishDailyArticle } from "./agent.js";
+
 const ALLOWED_ORIGINS = [
   "https://knowledge6566.github.io",
   "https://nishublogs.online",
@@ -130,6 +132,11 @@ async function markAllRead(request, env) {
 // ---------- Router ----------
 
 export default {
+  // Runs automatically on the cron schedule in wrangler.jsonc
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(publishDailyArticle(env));
+  },
+
   async fetch(request, env) {
     const url = new URL(request.url);
     const { pathname } = url;
@@ -148,7 +155,8 @@ export default {
       (postId && (method === "PUT" || method === "DELETE")) ||
       (pathname === "/api/contacts" && method === "GET") ||
       (contactReadId && method === "PATCH") ||
-      (pathname === "/api/contacts/mark-all-read" && method === "PATCH");
+      (pathname === "/api/contacts/mark-all-read" && method === "PATCH") ||
+      (pathname === "/api/agent/run" && method === "POST");
 
     if (needsAdmin && !isAuthorized(request, env)) {
       return json(request, { success: false, message: "Unauthorized" }, 401);
@@ -164,6 +172,12 @@ export default {
       if (pathname === "/api/contacts" && method === "GET") return await getContacts(request, env);
       if (contactReadId && method === "PATCH") return await markRead(request, env, contactReadId);
       if (pathname === "/api/contacts/mark-all-read" && method === "PATCH") return await markAllRead(request, env);
+
+      // Manual test: publishes one article immediately
+      if (pathname === "/api/agent/run" && method === "POST") {
+        const title = await publishDailyArticle(env);
+        return json(request, { success: true, title }, 201);
+      }
 
       return json(request, { success: false, message: "Not found" }, 404);
     } catch (err) {
