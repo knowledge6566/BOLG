@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 =====================================================
-Nishu Blogs — Python Flask Backend
+Bolgerr  — Python Flask Backend
 Version: 1.0.0
 Stack: Python 3.7+ + Flask + JSON file store
 =====================================================
@@ -411,7 +411,7 @@ def subscribe_newsletter():
 
     return jsonify({
         'success': True,
-        'message': 'Welcome to Nishu Blogs! Check your inbox for a confirmation.'
+        'message': 'Welcome to Bolgerr ! Check your inbox for a confirmation.'
     }), 201
 
 @app.route('/api/subscribers', methods=['GET'])
@@ -506,7 +506,7 @@ if __name__ == '__main__':
 
     RUN_PORT = PORT
 
-    print(f"\n🚀  Nishu Blogs backend running at http://localhost:{RUN_PORT}")
+    print(f"\n🚀  Bolgerr  backend running at http://localhost:{RUN_PORT}")
     print(f"📖  API docs:")
     print(f"     GET  /api/posts              List all posts")
     print(f"     GET  /api/posts/:id          Single post")

@@ -1,4 +1,4 @@
-# 🚀 Nishu Blogs DEPLOYMENT GUIDE
+# 🚀 Bolgerr  DEPLOYMENT GUIDE
 
 ## Quick Deploy Buttons
 
@@ -7,7 +7,7 @@
 | **Vercel** | `vercel` (one-click) |
 | **Railway** | Connect GitHub repo |
 | **Heroku** | `git push heroku main` |
-| **Docker** | `docker run -p 3000:3000 Nishu Blogs` |
+| **Docker** | `docker run -p 3000:3000 Bolgerr ` |
 | **AWS** | CloudFormation template |
 | **DigitalOcean** | App Platform |
 | **Replit** | Fork & run |
@@ -27,7 +27,7 @@
    git init
    git add .
    git commit -m "Initial commit"
-   git remote add origin https://github.com/yourusername/Nishu Blogs
+   git remote add origin https://github.com/yourusername/Bolgerr 
    git push -u origin main
    ```
 
@@ -145,7 +145,7 @@ heroku ps:scale web=2
    - Port: Auto-configured
    - Database: Optional (PostgreSQL, MySQL)
 
-4. **Visit:** Auto-generated URL (e.g., `https://Nishu Blogs-production.up.railway.app`)
+4. **Visit:** Auto-generated URL (e.g., `https://Bolgerr -production.up.railway.app`)
 
 ---
 
@@ -175,12 +175,12 @@ heroku ps:scale web=2
 
 3. **Build image:**
    ```bash
-   docker build -t Nishu Blogs:latest .
+   docker build -t Bolgerr :latest .
    ```
 
 4. **Run locally:**
    ```bash
-   docker run -p 3000:3000 Nishu Blogs:latest
+   docker run -p 3000:3000 Bolgerr :latest
    # Visit http://localhost:3000
    ```
 
@@ -190,19 +190,19 @@ heroku ps:scale web=2
 
 2. **Tag image:**
    ```bash
-   docker tag Nishu Blogs:latest username/Nishu Blogs:latest
+   docker tag Bolgerr :latest username/Bolgerr :latest
    ```
 
 3. **Push:**
    ```bash
    docker login
-   docker push username/Nishu Blogs:latest
+   docker push username/Bolgerr :latest
    ```
 
 4. **Pull and run anywhere:**
    ```bash
-   docker pull username/Nishu Blogs:latest
-   docker run -p 3000:3000 username/Nishu Blogs:latest
+   docker pull username/Bolgerr :latest
+   docker run -p 3000:3000 username/Bolgerr :latest
    ```
 
 ---
@@ -229,15 +229,15 @@ heroku ps:scale web=2
 
 3. **Clone repo:**
    ```bash
-   git clone https://github.com/yourusername/Nishu Blogs
-   cd Nishu Blogs
+   git clone https://github.com/yourusername/Bolgerr 
+   cd Bolgerr 
    npm install
    ```
 
 4. **Install PM2 (process manager):**
    ```bash
    sudo npm install -g pm2
-   pm2 start server.js --name "Nishu Blogs"
+   pm2 start server.js --name "Bolgerr "
    pm2 startup
    pm2 save
    ```
@@ -286,7 +286,7 @@ heroku ps:scale web=2
 
 2. **Initialize:**
    ```bash
-   eb init -p node.js-18 Nishu Blogs --region us-east-1
+   eb init -p node.js-18 Bolgerr  --region us-east-1
    ```
 
 3. **Create environment:**
@@ -325,17 +325,17 @@ eb logs
    ```yaml
    steps:
      - name: 'gcr.io/cloud-builders/docker'
-       args: ['build', '-t', 'gcr.io/$PROJECT_ID/Nishu Blogs', '.']
+       args: ['build', '-t', 'gcr.io/$PROJECT_ID/Bolgerr ', '.']
      - name: 'gcr.io/cloud-builders/docker'
-       args: ['push', 'gcr.io/$PROJECT_ID/Nishu Blogs']
+       args: ['push', 'gcr.io/$PROJECT_ID/Bolgerr ']
      - name: 'gcr.io/cloud-builders/gke-deploy'
-       args: ['run', '--filename=', '--image=gcr.io/$PROJECT_ID/Nishu Blogs', '--location=us-central1']
+       args: ['run', '--filename=', '--image=gcr.io/$PROJECT_ID/Bolgerr ', '--location=us-central1']
    ```
 
 3. **Deploy:**
    ```bash
    gcloud builds submit --config=cloudbuild.yaml
-   gcloud run deploy Nishu Blogs --image gcr.io/your-project/Nishu Blogs --platform managed --region us-central1
+   gcloud run deploy Bolgerr  --image gcr.io/your-project/Bolgerr  --platform managed --region us-central1
    ```
 
 ---
@@ -504,4 +504,4 @@ Once deployed:
 
 ---
 
-**Need help?** Contact: deploy-support@Nishu Blogs.com
+**Need help?** Contact: deploy-support@Bolgerr .com

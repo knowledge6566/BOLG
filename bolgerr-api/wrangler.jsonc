@@ -1,5 +1,5 @@
 {
-  "name": "Nishu Blogs-api",
+  "name": "bolgerr-api",
   "main": "src/index.js",
   "compatibility_date": "2026-01-01",
   "d1_databases": [
@@ -15,7 +15,7 @@
   "vars": {
     "BLOG_CATEGORIES": "Technology,Design,Culture,Science,Life,Business",
     "ARTICLE_WORDS": "1200",
-    "BLOG_AUTHOR": "Nishu Blogs"
+    "BLOG_AUTHOR": "Bolgerr "
   },
   "observability": {
     "enabled": true

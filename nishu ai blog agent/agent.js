@@ -98,7 +98,7 @@ async function generateAndSave(env, model) {
   const previousTopics = results.map((r, i) => `${i + 1}. ${r.title}`).join("\n") || "(none)";
 
   const prompt = `
-You are the editorial AI for Nishu Blogs.
+You are the editorial AI for Bolgerr .
 
 Choose ONE useful, original topic for today's blog article.
 
@@ -152,7 +152,7 @@ Allowed categories: ${categories.join(", ")}
     article.title,
     article.excerpt,
     markdownToHtml(article.contentMarkdown),
-    env.BLOG_AUTHOR || "Nishu Blogs",
+    env.BLOG_AUTHOR || "Bolgerr ",
     article.readTime || "6 min",
     article.category,
     article.emoji || "📝",

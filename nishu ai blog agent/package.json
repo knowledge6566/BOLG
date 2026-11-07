@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Daily AI blog publisher for the Nishu Blogs custom admin panel.",
+  "description": "Daily AI blog publisher for the Bolgerr  custom admin panel.",
   "scripts": {
     "install-browser": "playwright install chromium",
     "test": "node run-once.js --dry-run",

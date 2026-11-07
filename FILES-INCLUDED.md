@@ -1,4 +1,4 @@
-# 📦 Nishu Blogs — COMPLETE FILE STRUCTURE
+# 📦 Bolgerr  — COMPLETE FILE STRUCTURE
 
 ## 📁 Files Included
 
@@ -97,7 +97,7 @@
 ### Clone & Setup (2 minutes)
 ```bash
 # Clone this folder structure
-mkdir Nishu Blogs && cd Nishu Blogs
+mkdir Bolgerr  && cd Bolgerr 
 
 # Copy all files from /mnt/user-data/outputs/
 # Then:
@@ -369,7 +369,7 @@ Everything is customizable:
 
 - **Documentation**: Read README.md, API-DOCUMENTATION.md
 - **Issues**: Check DEPLOYMENT.md troubleshooting
-- **Questions**: Email support@Nishu Blogs.com
+- **Questions**: Email support@Bolgerr .com
 - **Contributing**: Fork on GitHub, submit PR
 
 ---
@@ -396,4 +396,4 @@ Everything you need to build a professional blog with 3D effects is included.
 
 ---
 
-*Made with ❤️ by Nishu Blogs Team — Bengaluru, India*
+*Made with ❤️ by Bolgerr  Team — Bengaluru, India*

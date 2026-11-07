@@ -1,5 +1,5 @@
 {
-  "name": "Nishu Blogs",
+  "name": "Bolgerr ",
   "version": "1.0.0",
   "description": "A full-stack blogger website with 3D effects, multi-page navigation, and a REST API backend",
   "main": "server.js",
@@ -29,6 +29,6 @@
     "3d",
     "fullstack"
   ],
-  "author": "Nishu Blogs",
+  "author": "Bolgerr ",
   "license": "MIT"
 }

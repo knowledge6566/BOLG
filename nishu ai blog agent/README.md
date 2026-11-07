@@ -1,4 +1,4 @@
-# Nishu Blogs — Daily AI Blog Agent
+# Bolgerr  — Daily AI Blog Agent
 
 This version is designed for the custom admin panel at:
 
