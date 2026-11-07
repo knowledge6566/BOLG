@@ -877,8 +877,8 @@ function renderFeatured() {
   if (!container) return;
   container.innerHTML = '';
   const featured = POSTS.filter(p => p.featured);
-  const others = POSTS.filter(p => !p.featured).slice(0,3);
-  featured.forEach((p,i) => container.appendChild(createPostCard(p, i===0)));
+  const others = POSTS.filter(p => !p.featured);
+  featured.forEach((p, i) => container.appendChild(createPostCard(p, i === 0)));
   others.forEach(p => container.appendChild(createPostCard(p)));
 }
 
