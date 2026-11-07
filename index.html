@@ -1203,6 +1203,8 @@ function startCubeInteraction() {
 })();
 
 /* ====== INIT ====== */
+// Count every page load as a site visit
+fetch(`${API}/api/visit`, { method: 'POST' }).catch(() => {});
 const initialPage = location.hash.replace('#','') || 'home';
    loadPosts().then(() => {
      const match = initialPage.match(/^post-(\d+)$/);
