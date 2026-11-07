@@ -1,4 +1,5 @@
 import { publishDailyArticle, fixMojibake } from "./agent.js";
+
 const ALLOWED_ORIGINS = [
   "https://knowledge6566.github.io",
   "https://nishublogs.online",
@@ -27,7 +28,6 @@ function isAuthorized(request, env) {
   return request.headers.get("Authorization") === `Bearer ${env.ADMIN_TOKEN}`;
 }
 
-// Convert database rows into the shape the frontend expects
 const toPost = row => ({
   ...row,
   date: row.postDate,
@@ -37,7 +37,6 @@ const toPost = row => ({
 
 const toContact = row => ({ ...row, read: !!row.isRead });
 
-// Values for INSERT/UPDATE, in the same column order
 function postValues(p) {
   return [
     p.title,
@@ -65,7 +64,6 @@ async function adminLogin(request, env) {
 }
 
 async function getPosts(request, env, url) {
-  // Drafts are only returned to a logged-in admin
   const wantsAll = url.searchParams.get("admin") === "true" && isAuthorized(request, env);
   const sql = wantsAll
     ? "SELECT * FROM posts ORDER BY id DESC"
@@ -127,6 +125,7 @@ async function markAllRead(request, env) {
   await env.DB.prepare("UPDATE contacts SET isRead = 1").run();
   return json(request, { success: true });
 }
+
 async function fixOldPosts(request, env) {
   const { results } = await env.DB.prepare("SELECT id, title, excerpt, body FROM posts").all();
   let fixed = 0;
@@ -143,13 +142,27 @@ async function fixOldPosts(request, env) {
   }
   return json(request, { success: true, fixed });
 }
-// ---------- Router ----------
+
 async function incrementViews(request, env, id) {
   await env.DB.prepare(
     "UPDATE posts SET views = views + 1 WHERE id = ? AND published = 1"
   ).bind(id).run();
   return json(request, { success: true });
 }
+
+async function recordVisit(request, env) {
+  await env.DB.prepare("UPDATE site_stats SET visits = visits + 1 WHERE id = 1").run();
+  return json(request, { success: true });
+}
+
+async function getStats(request, env) {
+  const s = await env.DB.prepare("SELECT visits FROM site_stats WHERE id = 1").first();
+  const p = await env.DB.prepare("SELECT COALESCE(SUM(views), 0) AS total FROM posts").first();
+  return json(request, { success: true, siteVisits: s?.visits || 0, articleViews: p?.total || 0 });
+}
+
+// ---------- Router ----------
+
 export default {
   // Runs automatically on the cron schedule in wrangler.jsonc
   async scheduled(event, env, ctx) {
@@ -167,6 +180,7 @@ export default {
 
     const postId = pathname.match(/^\/api\/posts\/(\d+)$/)?.[1];
     const contactReadId = pathname.match(/^\/api\/contacts\/(\d+)\/read$/)?.[1];
+    const viewId = pathname.match(/^\/api\/posts\/(\d+)\/view$/)?.[1];
 
     // Routes that change data or read messages require the admin token
     const needsAdmin =
@@ -175,7 +189,9 @@ export default {
       (pathname === "/api/contacts" && method === "GET") ||
       (contactReadId && method === "PATCH") ||
       (pathname === "/api/contacts/mark-all-read" && method === "PATCH") ||
-      (pathname === "/api/agent/run" && method === "POST");
+      (pathname === "/api/agent/run" && method === "POST") ||
+      (pathname === "/api/admin/fix-encoding" && method === "POST") ||
+      (pathname === "/api/stats" && method === "GET");
 
     if (needsAdmin && !isAuthorized(request, env)) {
       return json(request, { success: false, message: "Unauthorized" }, 401);
@@ -188,16 +204,15 @@ export default {
       if (pathname === "/api/posts" && method === "POST") return await createPost(request, env);
       if (postId && method === "PUT") return await updatePost(request, env, postId);
       if (postId && method === "DELETE") return await deletePost(request, env, postId);
+      if (viewId && method === "POST") return await incrementViews(request, env, viewId);
       if (pathname === "/api/contacts" && method === "GET") return await getContacts(request, env);
       if (contactReadId && method === "PATCH") return await markRead(request, env, contactReadId);
       if (pathname === "/api/contacts/mark-all-read" && method === "PATCH") return await markAllRead(request, env);
-      if (pathname === "/api/admin/fix-encoding" && method === "POST") {
-        if (!isAuthorized(request, env)) return json(request, { success: false, message: "Unauthorized" }, 401);
-        return await fixOldPosts(request, env);
-      }
+      if (pathname === "/api/visit" && method === "POST") return await recordVisit(request, env);
+      if (pathname === "/api/stats" && method === "GET") return await getStats(request, env);
+      if (pathname === "/api/admin/fix-encoding" && method === "POST") return await fixOldPosts(request, env);
+
       // Manual test: publishes one article immediately
-            const viewId = pathname.match(/^\/api\/posts\/(\d+)\/view$/)?.[1];
-      if (viewId && method === "POST") return await incrementViews(request, env, viewId);
       if (pathname === "/api/agent/run" && method === "POST") {
         const title = await publishDailyArticle(env);
         return json(request, { success: true, title }, 201);
