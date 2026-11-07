@@ -144,7 +144,12 @@ async function fixOldPosts(request, env) {
   return json(request, { success: true, fixed });
 }
 // ---------- Router ----------
-
+async function incrementViews(request, env, id) {
+  await env.DB.prepare(
+    "UPDATE posts SET views = views + 1 WHERE id = ? AND published = 1"
+  ).bind(id).run();
+  return json(request, { success: true });
+}
 export default {
   // Runs automatically on the cron schedule in wrangler.jsonc
   async scheduled(event, env, ctx) {
@@ -191,6 +196,8 @@ export default {
         return await fixOldPosts(request, env);
       }
       // Manual test: publishes one article immediately
+            const viewId = pathname.match(/^\/api\/posts\/(\d+)\/view$/)?.[1];
+      if (viewId && method === "POST") return await incrementViews(request, env, viewId);
       if (pathname === "/api/agent/run" && method === "POST") {
         const title = await publishDailyArticle(env);
         return json(request, { success: true, title }, 201);
