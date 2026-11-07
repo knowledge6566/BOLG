@@ -912,6 +912,7 @@ function filterPosts() { renderAllPosts(); }
 function openPost(id) {
   const post = POSTS.find(p => p.id === id);
   if (!post) return;
+       fetch(`${API}/api/posts/${id}/view`, { method: 'POST' }).catch(() => {});
   const container = document.getElementById('singlePostContent');
   container.innerHTML = `
     <div class="back-btn" onclick="navigate('${currentPage === 'post' ? 'blog' : currentPage}')">← Back to articles</div>
