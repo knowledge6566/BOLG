@@ -709,7 +709,8 @@ function buildPostRow(post) {
       </div>
     </div>
     <div class="post-row-actions">
-      <button class="btn btn-ghost btn-sm" onclick="editPost(${post.id})">✏️ Edit</button>
+               <a class="btn btn-ghost btn-sm" href="https://nishublogs.online/#post-${post.id}" target="_blank" rel="noopener">👁 View</a>
+         <button class="btn btn-ghost btn-sm" onclick="editPost(${post.id})">✏️ Edit</button>
       <button class="btn btn-danger btn-sm" onclick="promptDelete(${post.id})">🗑</button>
     </div>
   </div>`;

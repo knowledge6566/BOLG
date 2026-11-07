@@ -1203,7 +1203,11 @@ function startCubeInteraction() {
 
 /* ====== INIT ====== */
 const initialPage = location.hash.replace('#','') || 'home';
-loadPosts().then(() => navigate(initialPage));
+   loadPosts().then(() => {
+     const match = initialPage.match(/^post-(\d+)$/);
+     if (match) openPost(Number(match[1]));
+     else navigate(initialPage);
+   });
 setTimeout(triggerReveal, 500);
 
 // Handle back/forward navigation (simple hash-based)
