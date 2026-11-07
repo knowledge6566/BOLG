@@ -394,11 +394,11 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
   </section>
 
   <!-- Stats -->
-  <div class="stats-bar reveal">
-    <div><div class="stat-num" data-target="248">0</div><div class="stat-label">Articles Published</div></div>
-    <div><div class="stat-num" data-target="94">0</div><div class="stat-label">K Readers Monthly</div></div>
-    <div><div class="stat-num" data-target="12">0</div><div class="stat-label">Categories</div></div>
-    <div><div class="stat-num" data-target="6">0</div><div class="stat-label">Years Running</div></div>
+    <div class="stats-bar reveal">
+    <div><div class="stat-num" id="statArticles">0</div><div class="stat-label">Articles Published</div></div>
+    <div><div class="stat-num" id="statReaders">0</div><div class="stat-label">Site Visits</div></div>
+    <div><div class="stat-num" id="statCategories">0</div><div class="stat-label">Categories</div></div>
+    <div><div class="stat-num" id="statYears">0</div><div class="stat-label">Years Running</div></div>
   </div>
 
   <!-- Featured Posts -->
@@ -793,7 +793,25 @@ const API = 'https://bolgerr-api.shauryabolgerr.workers.dev';
 let POSTS = [];
 let currentPage = 'home';
 let currentFilter = 'All';
+const BLOG_START_YEAR = 2019;
 
+function setStat(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = Number(value).toLocaleString();
+}
+
+async function updateStats() {
+  const published = POSTS.filter(p => p.published !== false);
+  const categories = new Set(published.map(p => p.category).filter(Boolean));
+  setStat('statArticles', published.length);
+  setStat('statCategories', categories.size);
+  setStat('statYears', Math.max(1, new Date().getFullYear() - BLOG_START_YEAR + 1));
+  try {
+    const res = await fetch(`${API}/api/stats`);
+    const s = await res.json();
+    setStat('statReaders', s.siteVisits || 0);
+  } catch {}
+}
 async function loadPosts() {
   try {
     const res = await fetch(`${API}/api/posts`);
@@ -1207,6 +1225,7 @@ function startCubeInteraction() {
 fetch(`${API}/api/visit`, { method: 'POST' }).catch(() => {});
 const initialPage = location.hash.replace('#','') || 'home';
    loadPosts().then(() => {
+      updateStats();
      const match = initialPage.match(/^post-(\d+)$/);
      if (match) openPost(Number(match[1]));
      else navigate(initialPage);

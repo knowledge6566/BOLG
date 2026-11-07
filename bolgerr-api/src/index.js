@@ -183,15 +183,15 @@ export default {
     const viewId = pathname.match(/^\/api\/posts\/(\d+)\/view$/)?.[1];
 
     // Routes that change data or read messages require the admin token
-    const needsAdmin =
+    
+          const needsAdmin =
       (pathname === "/api/posts" && method === "POST") ||
       (postId && (method === "PUT" || method === "DELETE")) ||
       (pathname === "/api/contacts" && method === "GET") ||
       (contactReadId && method === "PATCH") ||
       (pathname === "/api/contacts/mark-all-read" && method === "PATCH") ||
       (pathname === "/api/agent/run" && method === "POST") ||
-      (pathname === "/api/admin/fix-encoding" && method === "POST") ||
-      (pathname === "/api/stats" && method === "GET");
+      (pathname === "/api/admin/fix-encoding" && method === "POST");
 
     if (needsAdmin && !isAuthorized(request, env)) {
       return json(request, { success: false, message: "Unauthorized" }, 401);
