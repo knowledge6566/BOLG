@@ -1,4 +1,4 @@
-# 📖 BOLGERR — QUICK REFERENCE GUIDE
+# 📖 Nishu Blogs — QUICK REFERENCE GUIDE
 
 ## ⚡ FASTEST START (Copy & Paste)
 
@@ -48,14 +48,14 @@ curl -X POST http://localhost:3000/api/newsletter \
 ### Docker
 ```bash
 # Build
-docker build -t bolgerr .
+docker build -t Nishu Blogs .
 
 # Run
-docker run -p 3000:3000 bolgerr
+docker run -p 3000:3000 Nishu Blogs
 
 # Push to Docker Hub
-docker tag bolgerr yourusername/bolgerr
-docker push yourusername/bolgerr
+docker tag Nishu Blogs yourusername/Nishu Blogs
+docker push yourusername/Nishu Blogs
 ```
 
 ### Database
@@ -200,7 +200,7 @@ railway link  # then auto-deploys on push
 git push heroku main
 
 # Docker
-docker build -t bolgerr . && docker run -p 3000:3000 bolgerr
+docker build -t Nishu Blogs . && docker run -p 3000:3000 Nishu Blogs
 ```
 
 ---
@@ -428,7 +428,7 @@ SMTP_PASSWORD=app_specific_password  # NOT regular password!
 
 ### Community
 - GitHub Discussions
-- Stack Overflow (tag: bolgerr)
+- Stack Overflow (tag: Nishu Blogs)
 - Discord community (optional)
 - Email support
 
@@ -480,11 +480,11 @@ You'll know you're successful when:
 - **Docs**: See README.md
 - **Issues**: Check DEPLOYMENT.md troubleshooting
 - **Errors**: Read error message + check logs
-- **Email**: support@bolgerr.com
-- **GitHub**: github.com/bolgerr/bolgerr
+- **Email**: support@Nishu Blogs.com
+- **GitHub**: github.com/Nishu Blogs/Nishu Blogs
 
 ---
 
 **Ready to launch?** Start with `npm install && npm start` 🚀
 
-Made with ❤️ by Bolgerr Team
+Made with ❤️ by Nishu Blogs Team

@@ -1,10 +1,10 @@
-## 📚 BOLGERR API DOCUMENTATION
+## 📚 Nishu Blogs API DOCUMENTATION
 
 ### Base URL
 ```
 Development:  http://localhost:3000     (Node.js)
               http://localhost:5000     (Python)
-Production:   https://api.bolgerr.com
+Production:   https://api.Nishu Blogs.com
 ```
 
 ### Authentication
@@ -321,7 +321,7 @@ curl -X POST http://localhost:3000/api/newsletter \
 ```json
 {
   "success": true,
-  "message": "Welcome to Bolgerr! Check your inbox for a confirmation."
+  "message": "Welcome to Nishu Blogs! Check your inbox for a confirmation."
 }
 ```
 
@@ -579,6 +579,6 @@ Recommended limits:
 ## 📞 SUPPORT
 
 For API issues:
-- Email: api-support@bolgerr.com
-- GitHub Issues: github.com/bolgerr/bolgerr/issues
-- Documentation: docs.bolgerr.com
+- Email: api-support@Nishu Blogs.com
+- GitHub Issues: github.com/Nishu Blogs/Nishu Blogs/issues
+- Documentation: docs.Nishu Blogs.com

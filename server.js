@@ -1,5 +1,5 @@
 /**
- * BOLGERR — Node.js / Express Backend
+ * Nishu Blogs — Node.js / Express Backend
  * Version: 2.0.0 — Supabase (Postgres) data store
  *
  * ENV VARS (set on your host, never commit):
@@ -354,7 +354,7 @@ app.post('/api/newsletter', async (req, res) => {
     console.log(`✉️  New subscriber: ${email}`);
     res.status(201).json({
       success: true,
-      message: 'Welcome to Bolgerr! Check your inbox for a confirmation.',
+      message: 'Welcome to Nishu Blogs! Check your inbox for a confirmation.',
     });
   } catch (err) {
     console.error(err);
@@ -446,5 +446,5 @@ app.use((err, req, res, next) => {
 
 /* ─── Start ─── */
 app.listen(PORT, () => {
-  console.log(`\n🚀  Bolgerr backend running on port ${PORT}`);
+  console.log(`\n🚀  Nishu Blogs backend running on port ${PORT}`);
 });

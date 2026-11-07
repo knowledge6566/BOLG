@@ -1,10 +1,10 @@
 #!/bin/bash
 # ============================================================
-# BOLGERR SETUP SCRIPT
-# Run this to get Bolgerr running locally in seconds
+# Nishu Blogs SETUP SCRIPT
+# Run this to get Nishu Blogs running locally in seconds
 # ============================================================
 
-echo "🚀 BOLGERR BLOG SETUP"
+echo "🚀 Nishu Blogs BLOG SETUP"
 echo "===================="
 echo ""
 

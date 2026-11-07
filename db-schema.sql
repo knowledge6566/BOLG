@@ -1,5 +1,5 @@
 -- ============================================================
--- BOLGERR DATABASE SCHEMA
+-- Nishu Blogs DATABASE SCHEMA
 -- Supports: SQLite, PostgreSQL, MySQL
 -- ============================================================
 
@@ -135,7 +135,7 @@ ORDER BY total_views DESC;
 const Database = require('better-sqlite3');
 const fs = require('fs');
 
-const db = new Database('bolgerr.db');
+const db = new Database('Nishu Blogs.db');
 const posts = JSON.parse(fs.readFileSync('data/posts.json'));
 
 const insert = db.prepare(`
@@ -158,7 +158,7 @@ console.log(`Imported ${posts.length} posts to SQLite`);
 import sqlite3
 import json
 
-conn = sqlite3.connect('bolgerr.db')
+conn = sqlite3.connect('Nishu Blogs.db')
 conn.row_factory = sqlite3.Row
 
 cursor = conn.cursor()
@@ -195,22 +195,22 @@ ALTER TABLE contacts RENAME COLUMN message TO message_text;
 
 -- BACKUP (MySQL)
 /*
-mysqldump -u root -p bolgerr > bolgerr_backup.sql
+mysqldump -u root -p Nishu Blogs > Nishu Blogs_backup.sql
 */
 
 -- RESTORE (MySQL)
 /*
-mysql -u root -p bolgerr < bolgerr_backup.sql
+mysql -u root -p Nishu Blogs < Nishu Blogs_backup.sql
 */
 
 -- BACKUP (SQLite)
 /*
-.backup bolgerr_backup.db
+.backup Nishu Blogs_backup.db
 */
 
 -- RESTORE (SQLite)
 /*
-.restore bolgerr_backup.db
+.restore Nishu Blogs_backup.db
 */
 
 -- ============================================================
@@ -237,5 +237,5 @@ mysql -u root -p bolgerr < bolgerr_backup.sql
 5. Monitor table size:
    SELECT table_name, ROUND(((data_length+index_length)/1024/1024), 2) as size_mb
    FROM information_schema.TABLES
-   WHERE table_schema = 'bolgerr';
+   WHERE table_schema = 'Nishu Blogs';
 */
