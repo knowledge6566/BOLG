@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Bolgerr Admin — Dashboard</title>
+<title>Nishu Blogs Admin — Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
 <!-- SheetJS for Excel export -->
@@ -271,7 +271,7 @@ tr:hover td { background:rgba(91,79,233,.03); }
 <!-- ══════════ LOGIN ══════════ -->
 <div id="loginScreen">
   <div class="login-box">
-    <div class="login-logo">Bolgerr</div>
+    <div class="login-logo">Nishu Blogs</div>
     <div class="login-sub">Admin Dashboard — sign in to continue</div>
     <div>
       <label>Username</label>
@@ -283,7 +283,7 @@ tr:hover td { background:rgba(91,79,233,.03); }
     </div>
     <button class="login-btn" id="loginBtn" onclick="doLogin()">Sign In →</button>
     <div class="login-err" id="loginErr"></div>
-    <div class="login-back">← <a href="index.html">Back to Bolgerr</a></div>
+    <div class="login-back">← <a href="index.html">Back to Nishu Blogs</a></div>
   </div>
 </div>
 
@@ -292,7 +292,7 @@ tr:hover td { background:rgba(91,79,233,.03); }
 
   <!-- SIDEBAR -->
   <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo">Bolgerr <span>Admin Panel</span></div>
+    <div class="sidebar-logo">Nishu Blogs <span>Admin Panel</span></div>
     <nav class="sidebar-nav">
       <div class="sidebar-section">Overview</div>
       <div class="nav-item active" onclick="showPanel('dashboard')" data-panel="dashboard">
@@ -527,7 +527,7 @@ tr:hover td { background:rgba(91,79,233,.03); }
 //  NOTE: There is no username/password stored here anymore.
 //  Login is verified by the Cloudflare Worker at /api/admin/login.
 // ══════════════════════════════════
-const API = 'https://bolgerr-api.shauryabolgerr.workers.dev';
+const API = 'https://Nishu Blogs-api.shauryaNishu Blogs.workers.dev';
 
 // ══════════════════════════════════
 //  AUTH
@@ -548,7 +548,7 @@ async function doLogin() {
     });
     const data = await res.json();
     if (data.success) {
-      sessionStorage.setItem('bolgerr_token', data.token);
+      sessionStorage.setItem('Nishu Blogs_token', data.token);
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('appShell').classList.add('visible');
       initApp();
@@ -564,18 +564,18 @@ async function doLogin() {
 }
 
 function doLogout() {
-  sessionStorage.removeItem('bolgerr_token');
+  sessionStorage.removeItem('Nishu Blogs_token');
   location.reload();
 }
 
 // authFetch: attaches the saved token to every admin API call
 function authFetch(url, options = {}) {
-  const token = sessionStorage.getItem('bolgerr_token');
+  const token = sessionStorage.getItem('Nishu Blogs_token');
   options.headers = { ...(options.headers || {}), 'Authorization': `Bearer ${token}` };
   return fetch(url, options);
 }
 
-if (sessionStorage.getItem('bolgerr_token')) {
+if (sessionStorage.getItem('Nishu Blogs_token')) {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appShell').classList.add('visible');
   window.addEventListener('DOMContentLoaded', initApp);
@@ -1017,7 +1017,7 @@ function exportExcel() {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Messages');
   const date = new Date().toISOString().split('T')[0];
-  XLSX.writeFile(wb, `bolgerr-messages-${date}.xlsx`);
+  XLSX.writeFile(wb, `Nishu Blogs-messages-${date}.xlsx`);
   showToastA('✅ Excel file downloaded!', 'success');
 }
 
@@ -1034,7 +1034,7 @@ function exportPDF() {
   doc.setTextColor(255,255,255);
   doc.setFont('helvetica','bold');
   doc.setFontSize(14);
-  doc.text('Bolgerr — Contact Messages', 14, 14);
+  doc.text('Nishu Blogs — Contact Messages', 14, 14);
   doc.setFontSize(9);
   doc.setFont('helvetica','normal');
   const now = new Date().toLocaleString();
@@ -1067,11 +1067,11 @@ function exportPDF() {
     doc.setPage(i);
     doc.setTextColor(150);
     doc.setFontSize(7);
-    doc.text(`Page ${i} of ${pageCount} — Bolgerr Admin`, 297/2, 205, {align:'center'});
+    doc.text(`Page ${i} of ${pageCount} — Nishu Blogs Admin`, 297/2, 205, {align:'center'});
   }
 
   const date = new Date().toISOString().split('T')[0];
-  doc.save(`bolgerr-messages-${date}.pdf`);
+  doc.save(`Nishu Blogs-messages-${date}.pdf`);
   showToastA('✅ PDF downloaded!', 'success');
 }
 
