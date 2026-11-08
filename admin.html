@@ -356,15 +356,17 @@ tr:hover td{background:rgba(91,79,233,.03)}
               <h3>Categorise</h3>
               <div class="field">
                 <label>Category</label>
-                <select id="postCategory">
-                  <option value="Technology">Technology</option>
-                  <option value="Design">Design</option>
-                  <option value="Culture">Culture</option>
-                  <option value="Science">Science</option>
-                  <option value="Life">Life</option>
-                  <option value="Business">Business</option>
-                  <option value="Entertainment">Entertainment</option>
-                </select>
+                <input type="text" id="postCategory" list="categoryList" placeholder="Type or pick a category" value="Technology"/>
+                <datalist id="categoryList">
+                  <option value="Technology"></option>
+                  <option value="Design"></option>
+                  <option value="Culture"></option>
+                  <option value="Science"></option>
+                  <option value="Life"></option>
+                  <option value="Business"></option>
+                  <option value="Entertainment"></option>
+                </datalist>
+                <div class="seo-help">Pick one from the list, or type any category you want.</div>
               </div>
               <div class="field" style="display:flex;align-items:center;gap:.6rem;margin-bottom:0">
                 <input type="checkbox" id="postFeatured" style="width:auto;margin:0"/>
@@ -596,7 +598,7 @@ function buildPostRow(post) {
     ${thumb}
     <div class="post-row-info">
       <div class="post-row-title">${escHtml(post.title)}</div>
-      <div class="post-row-meta">${post.category} · ${post.date} · ${(post.views || 0).toLocaleString()} views
+      <div class="post-row-meta">${escHtml(post.category)} · ${post.date} · ${(post.views || 0).toLocaleString()} views
         &nbsp;<span class="badge ${post.published !== false ? 'badge-pub' : 'badge-draft'}">${post.published !== false ? 'Published' : 'Draft'}</span>
         ${post.featured ? '<span class="badge" style="background:rgba(233,79,106,.12);color:var(--accent2)">⭐ Featured</span>' : ''}
       </div>
@@ -671,7 +673,7 @@ function getEditorData(published = true) {
     excerpt:  document.getElementById('postExcerpt').value.trim(),
     author:   document.getElementById('postAuthor').value.trim() || 'Nishu Blogs',
     readTime: document.getElementById('postReadTime').value.trim() || '5 min',
-    category: document.getElementById('postCategory').value,
+    category: document.getElementById('postCategory').value.trim() || 'Technology',
     coverImage: document.getElementById('postCoverImage').value || '',
     featured: document.getElementById('postFeatured').checked,
     body:     getCleanBody(),
@@ -830,7 +832,6 @@ function addRemoveButtons() {
     if (img.parentElement && img.parentElement.classList.contains('img-wrap')) return;
     const wrap = document.createElement('div');
     wrap.className = 'img-wrap';
-    wrap.contentEditable = 'false';
     img.replaceWith(wrap);
     wrap.appendChild(img);
     wrap.appendChild(makeRemoveBtn(wrap));
@@ -842,7 +843,6 @@ function insertImageAtCursor(src) {
   body.focus();
   const wrap = document.createElement('div');
   wrap.className = 'img-wrap';
-  wrap.contentEditable = 'false';
   const img = document.createElement('img');
   img.src = src;
   img.alt = '';
