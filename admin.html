@@ -124,7 +124,10 @@ tr:hover td{background:rgba(91,79,233,.03)}
 #editorBody ul,#editorBody ol{padding-left:1.5rem;margin:.5rem 0}
 #editorBody p{margin-bottom:.75rem}
 #editorBody a{color:var(--accent);text-decoration:underline}
-#editorBody img{max-width:100%;border-radius:8px;margin:1rem 0;display:block}
+#editorBody img{max-width:100%;border-radius:8px;margin:0;display:block}
+.img-wrap{position:relative;display:block;margin:1rem 0}
+.img-remove-btn{position:absolute;top:8px;right:8px;background:var(--danger);color:#fff;border:none;border-radius:40px;padding:.3rem .7rem;font-size:.75rem;font-family:var(--ff-display);font-weight:700;cursor:pointer;z-index:5;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.img-remove-btn:hover{background:#dc2626}
 
 .editor-sidebar{display:flex;flex-direction:column;gap:1rem}
 .editor-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem}
@@ -294,7 +297,7 @@ tr:hover td{background:rgba(91,79,233,.03)}
 
             <div class="editor-card">
               <h3>Cover Image</h3>
-              <img id="coverImagePreview" style="display:none;width:100%;border-radius:8px;margin-bottom:.75rem;max-height:240px;object-fit:cover"/>
+              <img id="coverImagePreview" alt="" style="display:none;width:100%;border-radius:8px;margin-bottom:.75rem;max-height:320px;object-fit:contain;background:#F8F6F1"/>
               <button type="button" class="btn btn-ghost btn-sm" style="width:100%;justify-content:center" onclick="document.getElementById('coverImageInput').click()">📷 Upload Cover Image</button>
               <input type="file" id="coverImageInput" accept="image/*" style="display:none" onchange="handleCoverImageFile(event)"/>
               <button type="button" class="btn btn-ghost btn-sm" id="removeCoverImageBtn" style="width:100%;justify-content:center;margin-top:.4rem;display:none;color:var(--danger)" onclick="removeCoverImage()">✕ Remove Cover Image</button>
@@ -650,8 +653,16 @@ function editPost(id) {
   document.getElementById('postKeyword').value = post.keyword || '';
   document.getElementById('postLabels').value = post.labels || '';
   document.getElementById('editorBody').innerHTML = post.body || '';
+  addRemoveButtons();
   if (post.coverImage) setCoverImage(post.coverImage); else removeCoverImage();
   showPanel('new-post');
+}
+
+function getCleanBody() {
+  const clone = document.getElementById('editorBody').cloneNode(true);
+  clone.querySelectorAll('.img-remove-btn').forEach(b => b.remove());
+  clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+  return clone.innerHTML;
 }
 
 function getEditorData(published = true) {
@@ -663,7 +674,7 @@ function getEditorData(published = true) {
     category: document.getElementById('postCategory').value,
     coverImage: document.getElementById('postCoverImage').value || '',
     featured: document.getElementById('postFeatured').checked,
-    body:     document.getElementById('editorBody').innerHTML,
+    body:     getCleanBody(),
     seoTitle: document.getElementById('postSeoTitle').value.trim(),
     slug:     document.getElementById('postSlug').value.trim(),
     metaDescription: document.getElementById('postMetaDescription').value.trim(),
@@ -773,7 +784,7 @@ function removeCoverImage() {
   document.getElementById('postCoverImage').value = '';
   const preview = document.getElementById('coverImagePreview');
   preview.style.display = 'none';
-  preview.src = '';
+  preview.removeAttribute('src');
   document.getElementById('removeCoverImageBtn').style.display = 'none';
 }
 
@@ -800,14 +811,54 @@ function handleImageFile(event) {
   event.target.value = '';
 }
 
-function insertImageAtCursor(src) {
-  document.getElementById('editorBody').focus();
-  document.execCommand('insertImage', false, src);
-  document.querySelectorAll('#editorBody img').forEach(img => {
-    img.style.maxWidth = '100%';
-    img.style.borderRadius = '8px';
-    img.style.margin = '1rem 0';
+function makeRemoveBtn(wrap) {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'img-remove-btn';
+  btn.textContent = '✕ Remove image';
+  btn.addEventListener('click', e => {
+    e.preventDefault();
+    wrap.remove();
+    showToastA('Image removed.', 'info');
   });
+  return btn;
+}
+
+function addRemoveButtons() {
+  const body = document.getElementById('editorBody');
+  body.querySelectorAll('img').forEach(img => {
+    if (img.parentElement && img.parentElement.classList.contains('img-wrap')) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'img-wrap';
+    wrap.contentEditable = 'false';
+    img.replaceWith(wrap);
+    wrap.appendChild(img);
+    wrap.appendChild(makeRemoveBtn(wrap));
+  });
+}
+
+function insertImageAtCursor(src) {
+  const body = document.getElementById('editorBody');
+  body.focus();
+  const wrap = document.createElement('div');
+  wrap.className = 'img-wrap';
+  wrap.contentEditable = 'false';
+  const img = document.createElement('img');
+  img.src = src;
+  img.alt = '';
+  wrap.appendChild(img);
+  wrap.appendChild(makeRemoveBtn(wrap));
+
+  const sel = window.getSelection();
+  if (sel && sel.rangeCount && body.contains(sel.anchorNode)) {
+    const range = sel.getRangeAt(0);
+    range.collapse(false);
+    range.insertNode(wrap);
+  } else {
+    body.appendChild(wrap);
+  }
+  const p = document.createElement('p');
+  wrap.after(p);
   showToastA('Image inserted!', 'success');
 }
 
