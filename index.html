@@ -989,13 +989,18 @@ function escapeHtml(str) {
 /* ====== INIT ====== */
 fetch(`${API}/api/visit`, { method: 'POST' }).catch(() => {});
 
-const initialPage = location.hash.replace('#', '') || 'home';
+ const initialPage = location.hash.replace('#', '') || 'home';
+
+// Show the page straight away, then fill in posts when they arrive
+navigate(initialPage);
+
 loadPosts().then(() => {
   buildCategoryUI();
   updateStats();
+  renderFeatured();
+  renderAllPosts();
   const match = initialPage.match(/^post-(\d+)$/);
   if (match) openPost(Number(match[1]));
-  else navigate(initialPage);
 });
 
 setTimeout(triggerReveal, 500);
