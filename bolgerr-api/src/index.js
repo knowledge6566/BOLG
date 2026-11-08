@@ -1,4 +1,11 @@
 import { publishDailyArticle, fixMojibake } from "./agent.js";
+import {
+  isValidEmail,
+  addSubscriber,
+  listSubscribers,
+  unsubscribe,
+  notifySubscribers,
+} from "./subscribers.js";
 
 const ALLOWED_ORIGINS = [
   "https://knowledge6566.github.io",
@@ -52,7 +59,23 @@ function postValues(p) {
   ];
 }
 
-// ---------- Handlers ----------
+async function safeNotify(env, post) {
+  try {
+    const result = await notifySubscribers(env, post);
+    console.log("Newsletter result:", JSON.stringify(result));
+  } catch (err) {
+    console.error("Newsletter failed:", err.message);
+  }
+}
+
+async function publishAndNotify(env) {
+  const title = await publishDailyArticle(env);
+  const post = await env.DB.prepare(
+    "SELECT * FROM posts WHERE published = 1 ORDER BY id DESC LIMIT 1"
+  ).first();
+  if (post) await safeNotify(env, post);
+  return title;
+}
 
 async function adminLogin(request, env) {
   const { username, password } = await request.json();
@@ -82,6 +105,7 @@ async function createPost(request, env) {
   const row = await env.DB.prepare("SELECT * FROM posts WHERE id = ?")
     .bind(r.meta.last_row_id)
     .first();
+  if (row && row.published) await safeNotify(env, row);
   return json(request, { success: true, data: toPost(row) }, 201);
 }
 
@@ -126,6 +150,52 @@ async function markAllRead(request, env) {
   return json(request, { success: true });
 }
 
+async function subscribeHandler(request, env) {
+  const body = await request.json().catch(() => ({}));
+  const email = String(body.email || "").trim().toLowerCase();
+  if (!isValidEmail(email)) {
+    return json(request, { success: false, message: "Please enter a valid email address." }, 400);
+  }
+  await addSubscriber(env, email);
+  return json(request, { success: true, message: "Subscribed." }, 201);
+}
+
+async function unsubscribeHandler(url, env) {
+  const token = url.searchParams.get("token") || "";
+  const ok = token ? await unsubscribe(env, token) : false;
+  const message = ok
+    ? "You have been unsubscribed. You will no longer receive emails from Nishu Blogs."
+    : "This unsubscribe link is not valid or was already used.";
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Nishu Blogs</title></head>
+<body style="font-family:Arial,sans-serif;max-width:520px;margin:4rem auto;padding:0 1rem;color:#0D0D0F">
+<h2>Nishu Blogs</h2><p>${message}</p>
+<p><a href="https://nishublogs.online" style="color:#5B4FE9">Back to the blog</a></p>
+</body></html>`;
+  return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+}
+
+async function subscribersHandler(request, env) {
+  const rows = await listSubscribers(env);
+  const active = rows.filter(r => r.active).length;
+  return json(request, { success: true, active, data: rows });
+}
+
+async function incrementViews(request, env, id) {
+  await env.DB.prepare("UPDATE posts SET views = views + 1 WHERE id = ? AND published = 1").bind(id).run();
+  return json(request, { success: true });
+}
+
+async function recordVisit(request, env) {
+  await env.DB.prepare("UPDATE site_stats SET visits = visits + 1 WHERE id = 1").run();
+  return json(request, { success: true });
+}
+
+async function getStats(request, env) {
+  const s = await env.DB.prepare("SELECT visits FROM site_stats WHERE id = 1").first();
+  const p = await env.DB.prepare("SELECT COALESCE(SUM(views), 0) AS total FROM posts").first();
+  return json(request, { success: true, siteVisits: s?.visits || 0, articleViews: p?.total || 0 });
+}
+
 async function fixOldPosts(request, env) {
   const { results } = await env.DB.prepare("SELECT id, title, excerpt, body FROM posts").all();
   let fixed = 0;
@@ -143,30 +213,9 @@ async function fixOldPosts(request, env) {
   return json(request, { success: true, fixed });
 }
 
-async function incrementViews(request, env, id) {
-  await env.DB.prepare(
-    "UPDATE posts SET views = views + 1 WHERE id = ? AND published = 1"
-  ).bind(id).run();
-  return json(request, { success: true });
-}
-
-async function recordVisit(request, env) {
-  await env.DB.prepare("UPDATE site_stats SET visits = visits + 1 WHERE id = 1").run();
-  return json(request, { success: true });
-}
-
-async function getStats(request, env) {
-  const s = await env.DB.prepare("SELECT visits FROM site_stats WHERE id = 1").first();
-  const p = await env.DB.prepare("SELECT COALESCE(SUM(views), 0) AS total FROM posts").first();
-  return json(request, { success: true, siteVisits: s?.visits || 0, articleViews: p?.total || 0 });
-}
-
-// ---------- Router ----------
-
 export default {
-  // Runs automatically on the cron schedule in wrangler.jsonc
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(publishDailyArticle(env));
+    ctx.waitUntil(publishAndNotify(env));
   },
 
   async fetch(request, env) {
@@ -179,17 +228,16 @@ export default {
     }
 
     const postId = pathname.match(/^\/api\/posts\/(\d+)$/)?.[1];
-    const contactReadId = pathname.match(/^\/api\/contacts\/(\d+)\/read$/)?.[1];
     const viewId = pathname.match(/^\/api\/posts\/(\d+)\/view$/)?.[1];
+    const contactReadId = pathname.match(/^\/api\/contacts\/(\d+)\/read$/)?.[1];
 
-    // Routes that change data or read messages require the admin token
-    
-          const needsAdmin =
+    const needsAdmin =
       (pathname === "/api/posts" && method === "POST") ||
       (postId && (method === "PUT" || method === "DELETE")) ||
       (pathname === "/api/contacts" && method === "GET") ||
       (contactReadId && method === "PATCH") ||
       (pathname === "/api/contacts/mark-all-read" && method === "PATCH") ||
+      (pathname === "/api/subscribers" && method === "GET") ||
       (pathname === "/api/agent/run" && method === "POST") ||
       (pathname === "/api/admin/fix-encoding" && method === "POST");
 
@@ -200,6 +248,9 @@ export default {
     try {
       if (pathname === "/api/admin/login" && method === "POST") return await adminLogin(request, env);
       if (pathname === "/api/contact" && method === "POST") return await createContact(request, env);
+      if (pathname === "/api/subscribe" && method === "POST") return await subscribeHandler(request, env);
+      if (pathname === "/api/unsubscribe" && method === "GET") return await unsubscribeHandler(url, env);
+      if (pathname === "/api/subscribers" && method === "GET") return await subscribersHandler(request, env);
       if (pathname === "/api/posts" && method === "GET") return await getPosts(request, env, url);
       if (pathname === "/api/posts" && method === "POST") return await createPost(request, env);
       if (postId && method === "PUT") return await updatePost(request, env, postId);
@@ -212,9 +263,8 @@ export default {
       if (pathname === "/api/stats" && method === "GET") return await getStats(request, env);
       if (pathname === "/api/admin/fix-encoding" && method === "POST") return await fixOldPosts(request, env);
 
-      // Manual test: publishes one article immediately
       if (pathname === "/api/agent/run" && method === "POST") {
-        const title = await publishDailyArticle(env);
+        const title = await publishAndNotify(env);
         return json(request, { success: true, title }, 201);
       }
 

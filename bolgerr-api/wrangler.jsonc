@@ -15,7 +15,7 @@
   "vars": {
     "BLOG_CATEGORIES": "Technology,Design,Culture,Science,Life,Business,culture,design,sciencetechnology",
     "ARTICLE_WORDS": "1200",
-    "BLOG_AUTHOR": "Bolgerr "
+   "BLOG_AUTHOR": "Nishu Blogs"
   },
   "observability": {
     "enabled": true
