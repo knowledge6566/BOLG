@@ -68,6 +68,42 @@ function postValues(p) {
   ];
 }
 
+async function safeNotify(env, post) {
+  try {
+    const result = await notifySubscribers(env, post);
+    console.log("Newsletter result:", JSON.stringify(result));
+  } catch (err) {
+    console.error("Newsletter failed:", err.message);
+  }
+}
+
+async function publishAndNotify(env) {
+  const title = await publishDailyArticle(env);
+  const post = await env.DB.prepare(
+    "SELECT * FROM posts WHERE published = 1 ORDER BY id DESC LIMIT 1"
+  ).first();
+  if (post) await safeNotify(env, post);
+  return title;
+}
+
+async function adminLogin(request, env) {
+  const { username, password } = await request.json();
+  if (env.ADMIN_USERNAME && env.ADMIN_PASSWORD &&
+      username === env.ADMIN_USERNAME && password === env.ADMIN_PASSWORD) {
+    return json(request, { success: true, token: env.ADMIN_TOKEN });
+  }
+  return json(request, { success: false, message: "Incorrect username or password." }, 401);
+}
+
+async function getPosts(request, env, url) {
+  const wantsAll = url.searchParams.get("admin") === "true" && isAuthorized(request, env);
+  const sql = wantsAll
+    ? "SELECT * FROM posts ORDER BY id DESC"
+    : "SELECT * FROM posts WHERE published = 1 ORDER BY id DESC";
+  const { results } = await env.DB.prepare(sql).all();
+  return json(request, { success: true, data: results.map(toPost) });
+}
+
 async function createPost(request, env) {
   const p = await request.json();
   if (!p.title) return json(request, { success: false, message: "Title is required." }, 400);

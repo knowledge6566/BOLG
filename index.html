@@ -6,31 +6,16 @@
      crossorigin="anonymous"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Nishu Blogs  — Where Ideas Come Alive</title>
+<title>Nishu Blogs — Where Ideas Come Alive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet"/>
 <style>
-/* ===================== DESIGN TOKENS ===================== */
 :root {
-  --ink:     #0D0D0F;
-  --paper:   #F8F6F1;
-  --accent:  #5B4FE9;
-  --accent2: #E94F6A;
-  --muted:   #6B7280;
-  --border:  #E5E2DB;
-  --card:    #FFFFFF;
-  --glow:    rgba(91,79,233,0.18);
-
-  --ff-display: 'Syne', sans-serif;
-  --ff-body:    'Inter', sans-serif;
-  --ff-serif:   'Playfair Display', serif;
-
-  --r: 12px;
-  --shadow: 0 8px 32px rgba(13,13,15,0.10);
-  --shadow-lg: 0 24px 64px rgba(13,13,15,0.16);
+  --ink:#0D0D0F; --paper:#F8F6F1; --accent:#5B4FE9; --accent2:#E94F6A;
+  --muted:#6B7280; --border:#E5E2DB; --card:#FFFFFF; --glow:rgba(91,79,233,0.18);
+  --ff-display:'Syne',sans-serif; --ff-body:'Inter',sans-serif; --ff-serif:'Playfair Display',serif;
+  --r:12px; --shadow:0 8px 32px rgba(13,13,15,0.10); --shadow-lg:0 24px 64px rgba(13,13,15,0.16);
 }
-
-/* ===================== RESET ===================== */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth;font-size:16px}
 body{font-family:var(--ff-body);background:var(--paper);color:var(--ink);overflow-x:hidden;line-height:1.6}
@@ -39,13 +24,10 @@ a{color:inherit;text-decoration:none}
 button{cursor:pointer;border:none;background:none;font:inherit}
 ul{list-style:none}
 
-/* ===================== CANVAS BG ===================== */
 #canvas3d{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.55}
 
-/* ===================== NAVBAR ===================== */
 .nav{position:fixed;top:0;left:0;right:0;z-index:1000;display:flex;align-items:center;justify-content:space-between;
-     padding:0 clamp(1rem,4vw,3rem);height:64px;
-     background:rgba(248,246,241,0.82);backdrop-filter:blur(18px);
+     padding:0 clamp(1rem,4vw,3rem);height:64px;background:rgba(248,246,241,0.82);backdrop-filter:blur(18px);
      border-bottom:1px solid var(--border);transition:box-shadow .3s}
 .nav.scrolled{box-shadow:0 4px 20px rgba(13,13,15,0.08)}
 .nav-logo{font-family:var(--ff-display);font-size:1.5rem;font-weight:800;letter-spacing:-0.03em;cursor:pointer;
@@ -56,105 +38,74 @@ ul{list-style:none}
 .nav-cta{padding:.5rem 1.25rem;background:var(--accent);color:#fff!important;border-radius:40px;font-size:.875rem!important;font-weight:600!important;transition:transform .2s,box-shadow .2s!important}
 .nav-cta:hover{transform:translateY(-1px);box-shadow:0 6px 20px var(--glow)}
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer}
-.hamburger span{width:24px;height:2px;background:var(--ink);border-radius:2px;transition:all .3s}
-.mobile-menu{display:none;position:fixed;top:64px;left:0;right:0;background:var(--paper);border-bottom:1px solid var(--border);
-             flex-direction:column;gap:0;z-index:999;padding:.5rem 0}
+.hamburger span{width:24px;height:2px;background:var(--ink);border-radius:2px}
+.mobile-menu{display:none;position:fixed;top:64px;left:0;right:0;background:var(--paper);border-bottom:1px solid var(--border);flex-direction:column;z-index:999;padding:.5rem 0}
 .mobile-menu a{display:block;padding:1rem clamp(1rem,4vw,3rem);font-family:var(--ff-display);font-weight:600;color:var(--muted);border-bottom:1px solid var(--border)}
 .mobile-menu a:last-child{border-bottom:none}
 .mobile-menu.open{display:flex}
 
-/* ===================== PAGE SYSTEM ===================== */
 .page{display:none;min-height:100vh;padding-top:64px;position:relative;z-index:1}
 .page.active{display:block}
 
-/* ===================== HERO ===================== */
-.hero{min-height:calc(100vh - 64px);display:flex;flex-direction:column;align-items:center;justify-content:center;
-      text-align:center;padding:4rem clamp(1rem,5vw,4rem);position:relative}
-.hero-eyebrow{font-family:var(--ff-display);font-size:.8rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
-              color:var(--accent);margin-bottom:1.5rem;opacity:0;animation:fadeUp .6s .2s forwards}
-.hero-title{font-family:var(--ff-display);font-size:clamp(3rem,9vw,7.5rem);font-weight:800;line-height:.95;
-            letter-spacing:-0.04em;margin-bottom:1.5rem;opacity:0;animation:fadeUp .6s .4s forwards}
+.hero{min-height:calc(100vh - 64px);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4rem clamp(1rem,5vw,4rem);position:relative}
+.hero-eyebrow{font-family:var(--ff-display);font-size:.8rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:1.5rem;opacity:0;animation:fadeUp .6s .2s forwards}
+.hero-title{font-family:var(--ff-display);font-size:clamp(3rem,9vw,7.5rem);font-weight:800;line-height:.95;letter-spacing:-0.04em;margin-bottom:1.5rem;opacity:0;animation:fadeUp .6s .4s forwards}
 .hero-title span{display:block}
-.hero-title .italic{font-family:var(--ff-serif);font-style:italic;font-size:clamp(2.5rem,7vw,6rem);font-weight:400;
-                    color:var(--accent);letter-spacing:-0.02em}
-.hero-sub{font-size:clamp(1rem,2vw,1.2rem);color:var(--muted);max-width:540px;margin:0 auto 2.5rem;
-          opacity:0;animation:fadeUp .6s .6s forwards}
+.hero-title .italic{font-family:var(--ff-serif);font-style:italic;font-size:clamp(2.5rem,7vw,6rem);font-weight:400;color:var(--accent);letter-spacing:-0.02em}
+.hero-sub{font-size:clamp(1rem,2vw,1.2rem);color:var(--muted);max-width:540px;margin:0 auto 2.5rem;opacity:0;animation:fadeUp .6s .6s forwards}
 .hero-actions{display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;opacity:0;animation:fadeUp .6s .8s forwards}
-.btn-primary{padding:.85rem 2rem;background:var(--accent);color:#fff;border-radius:40px;font-family:var(--ff-display);
-             font-weight:700;font-size:.9rem;letter-spacing:.02em;transition:transform .2s,box-shadow .2s}
+.btn-primary{padding:.85rem 2rem;background:var(--accent);color:#fff;border-radius:40px;font-family:var(--ff-display);font-weight:700;font-size:.9rem;letter-spacing:.02em;transition:transform .2s,box-shadow .2s}
 .btn-primary:hover{transform:translateY(-2px);box-shadow:0 10px 30px var(--glow)}
-.btn-outline{padding:.85rem 2rem;border:2px solid var(--border);border-radius:40px;font-family:var(--ff-display);
-             font-weight:700;font-size:.9rem;letter-spacing:.02em;color:var(--ink);transition:all .2s}
+.btn-outline{padding:.85rem 2rem;border:2px solid var(--border);border-radius:40px;font-family:var(--ff-display);font-weight:700;font-size:.9rem;letter-spacing:.02em;color:var(--ink);transition:all .2s}
 .btn-outline:hover{border-color:var(--accent);color:var(--accent)}
-.hero-scroll{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;
-             align-items:center;gap:.5rem;opacity:0;animation:fadeUp .6s 1.2s forwards}
+.hero-scroll{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.5rem;opacity:0;animation:fadeUp .6s 1.2s forwards}
 .hero-scroll span{font-size:.7rem;font-family:var(--ff-display);font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .scroll-line{width:1px;height:40px;background:linear-gradient(to bottom,var(--accent),transparent);animation:scrollPulse 1.5s infinite}
 
-/* ===================== SECTIONS ===================== */
 .section{padding:clamp(3rem,8vw,6rem) clamp(1rem,5vw,4rem)}
-.section-label{font-family:var(--ff-display);font-size:.75rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
-               color:var(--accent);margin-bottom:1rem}
-.section-title{font-family:var(--ff-display);font-size:clamp(1.8rem,4vw,3rem);font-weight:800;letter-spacing:-0.03em;
-               margin-bottom:.5rem;line-height:1.1}
+.section-label{font-family:var(--ff-display);font-size:.75rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:1rem}
+.section-title{font-family:var(--ff-display);font-size:clamp(1.8rem,4vw,3rem);font-weight:800;letter-spacing:-0.03em;margin-bottom:.5rem;line-height:1.1}
 .section-sub{color:var(--muted);max-width:500px;margin-bottom:3rem}
 
-/* ===================== POST CARDS ===================== */
 .posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.5rem}
-.post-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;
-           transition:transform .3s,box-shadow .3s;cursor:pointer;position:relative}
+.post-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:transform .3s,box-shadow .3s;cursor:pointer;position:relative}
 .post-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-lg)}
-.post-card-img{height:200px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;
-               justify-content:center;font-size:3rem;position:relative;overflow:hidden}
+.post-card-img{height:200px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;overflow:hidden;background-size:cover;background-position:center}
 .post-card-img span{z-index:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,.3))}
 .post-card-body{padding:1.5rem}
-.post-tag{display:inline-block;padding:.25rem .75rem;border-radius:40px;background:rgba(91,79,233,.1);
-          color:var(--accent);font-size:.7rem;font-family:var(--ff-display);font-weight:700;letter-spacing:.05em;
-          text-transform:uppercase;margin-bottom:.75rem}
+.post-tag{display:inline-block;padding:.25rem .75rem;border-radius:40px;background:rgba(91,79,233,.1);color:var(--accent);font-size:.7rem;font-family:var(--ff-display);font-weight:700;letter-spacing:.05em;text-transform:uppercase;margin-bottom:.75rem}
 .post-title{font-family:var(--ff-display);font-size:1.1rem;font-weight:700;margin-bottom:.5rem;line-height:1.3}
 .post-excerpt{font-size:.875rem;color:var(--muted);line-height:1.6;margin-bottom:1rem}
 .post-meta{display:flex;align-items:center;justify-content:space-between;font-size:.75rem;color:var(--muted)}
 .post-author{display:flex;align-items:center;gap:.5rem}
-.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));
-        display:flex;align-items:center;justify-content:center;color:#fff;font-size:.65rem;font-weight:700;flex-shrink:0}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;color:#fff;font-size:.65rem;font-weight:700;flex-shrink:0}
 .post-card.featured{grid-column:1/-1}
 .post-card.featured .post-card-img{height:300px}
 .post-card.featured .post-title{font-size:1.6rem}
 .tilt-card{transform-style:preserve-3d;transition:transform .1s}
-.tilt-shine{position:absolute;inset:0;border-radius:var(--r);background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.15),transparent 60%);
-            pointer-events:none;opacity:0;transition:opacity .3s}
+.tilt-shine{position:absolute;inset:0;border-radius:var(--r);background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.15),transparent 60%);pointer-events:none;opacity:0;transition:opacity .3s}
 .tilt-card:hover .tilt-shine{opacity:1}
 
-/* ===================== STATS BAR ===================== */
-.stats-bar{background:var(--ink);color:#fff;padding:2.5rem clamp(1rem,5vw,4rem);
-           display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2rem;text-align:center;position:relative;z-index:1}
-.stat-num{font-family:var(--ff-display);font-size:clamp(2rem,5vw,3.5rem);font-weight:800;
-          background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;
-          -webkit-text-fill-color:transparent;background-clip:text}
+.stats-bar{background:var(--ink);color:#fff;padding:2.5rem clamp(1rem,5vw,4rem);display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2rem;text-align:center;position:relative;z-index:1}
+.stat-num{font-family:var(--ff-display);font-size:clamp(2rem,5vw,3.5rem);font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .stat-label{font-size:.8rem;color:rgba(255,255,255,.5);font-family:var(--ff-display);font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-top:.25rem}
 
-/* ===================== ABOUT PAGE ===================== */
 .about-hero{padding:5rem clamp(1rem,5vw,4rem) 3rem;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;max-width:1200px;margin:0 auto}
 .about-img-wrap{position:relative}
 .about-visual{display:flex;justify-content:center;align-items:center;min-height:380px}
-.about-visual-card{width:100%;max-width:380px;padding:2.5rem 2rem;border-radius:20px;
-  background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);color:#fff;box-shadow:var(--shadow-lg);position:relative;overflow:hidden}
-.about-visual-card::before{content:'';position:absolute;inset:0;
-  background:radial-gradient(circle at 80% 15%,rgba(255,255,255,.22),transparent 55%);pointer-events:none}
+.about-visual-card{width:100%;max-width:380px;padding:2.5rem 2rem;border-radius:20px;background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);color:#fff;box-shadow:var(--shadow-lg);position:relative;overflow:hidden}
+.about-visual-card::before{content:'';position:absolute;inset:0;background:radial-gradient(circle at 80% 15%,rgba(255,255,255,.22),transparent 55%);pointer-events:none}
 .about-visual-logo{font-family:var(--ff-display);font-size:2.6rem;font-weight:800;letter-spacing:-0.03em;position:relative}
 .about-visual-quote{font-family:var(--ff-serif);font-style:italic;font-size:1.25rem;margin-top:.75rem;opacity:.92;position:relative}
 .about-visual-line{height:2px;width:56px;background:rgba(255,255,255,.7);margin:1.75rem 0 1.25rem;position:relative}
 .about-visual-tags{display:flex;flex-wrap:wrap;gap:.5rem;position:relative}
-.about-visual-tags span{padding:.35rem .85rem;border-radius:40px;background:rgba(255,255,255,.18);
-  font-family:var(--ff-display);font-size:.75rem;font-weight:700;letter-spacing:.04em}
-.about-badge{position:absolute;top:1rem;right:1rem;background:var(--accent);color:#fff;
-             padding:.5rem 1rem;border-radius:40px;font-family:var(--ff-display);font-weight:700;font-size:.8rem}
+.about-visual-tags span{padding:.35rem .85rem;border-radius:40px;background:rgba(255,255,255,.18);font-family:var(--ff-display);font-size:.75rem;font-weight:700;letter-spacing:.04em}
+.about-badge{position:absolute;top:1rem;right:1rem;background:var(--accent);color:#fff;padding:.5rem 1rem;border-radius:40px;font-family:var(--ff-display);font-weight:700;font-size:.8rem}
 .about-content .section-label{margin-bottom:.75rem}
 .about-content h1{font-family:var(--ff-display);font-size:clamp(2rem,4vw,3.5rem);font-weight:800;letter-spacing:-0.03em;margin-bottom:1.5rem;line-height:1.1}
 .about-content p{color:var(--muted);margin-bottom:1.25rem;line-height:1.8;font-size:1rem}
 .skill-pills{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1.5rem}
-.skill-pill{padding:.35rem .9rem;border:1.5px solid var(--border);border-radius:40px;font-size:.78rem;
-            font-family:var(--ff-display);font-weight:600;color:var(--muted);transition:all .2s}
+.skill-pill{padding:.35rem .9rem;border:1.5px solid var(--border);border-radius:40px;font-size:.78rem;font-family:var(--ff-display);font-weight:600;color:var(--muted);transition:all .2s}
 .skill-pill:hover{border-color:var(--accent);color:var(--accent);background:rgba(91,79,233,.06)}
 .timeline{padding:0 clamp(1rem,5vw,4rem) 5rem;max-width:800px;margin:0 auto}
 .timeline h2{font-family:var(--ff-display);font-size:2rem;font-weight:800;letter-spacing:-0.03em;margin-bottom:2rem}
@@ -166,25 +117,19 @@ ul{list-style:none}
 .tl-content h4{font-family:var(--ff-display);font-weight:700;margin-bottom:.25rem}
 .tl-content p{font-size:.875rem;color:var(--muted)}
 
-/* ===================== CONTACT PAGE ===================== */
 .contact-wrap{max-width:1100px;margin:0 auto;padding:4rem clamp(1rem,5vw,4rem);display:grid;grid-template-columns:1fr 1.3fr;gap:4rem;align-items:start}
 .contact-info h1{font-family:var(--ff-display);font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-0.03em;margin-bottom:1rem}
 .contact-info p{color:var(--muted);margin-bottom:2rem;line-height:1.8}
 .contact-detail{display:flex;align-items:center;gap:1rem;margin-bottom:1.25rem}
-.contact-icon{width:44px;height:44px;border-radius:10px;background:rgba(91,79,233,.1);display:flex;align-items:center;
-              justify-content:center;font-size:1.1rem;flex-shrink:0;color:var(--accent)}
+.contact-icon{width:44px;height:44px;border-radius:10px;background:rgba(91,79,233,.1);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;color:var(--accent)}
 .contact-detail-text span{display:block;font-size:.75rem;font-family:var(--ff-display);font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .contact-detail-text strong{font-family:var(--ff-display);font-size:.95rem}
-.contact-socials{display:flex;gap:.75rem;margin-top:2rem}
-.social-btn{width:40px;height:40px;border-radius:10px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1rem;transition:all .2s}
-.social-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(91,79,233,.06)}
 .contact-form{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:2.5rem;box-shadow:var(--shadow)}
 .contact-form h2{font-family:var(--ff-display);font-size:1.4rem;font-weight:800;margin-bottom:1.75rem}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
 .form-group{margin-bottom:1.25rem}
 .form-group label{display:block;font-size:.78rem;font-family:var(--ff-display);font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
-.form-group input,.form-group textarea,.form-group select{width:100%;padding:.85rem 1rem;border:1.5px solid var(--border);
-  border-radius:8px;font-family:var(--ff-body);font-size:.9rem;background:var(--paper);color:var(--ink);transition:border-color .2s,box-shadow .2s;outline:none;resize:none}
+.form-group input,.form-group textarea,.form-group select{width:100%;padding:.85rem 1rem;border:1.5px solid var(--border);border-radius:8px;font-family:var(--ff-body);font-size:.9rem;background:var(--paper);color:var(--ink);transition:border-color .2s,box-shadow .2s;outline:none;resize:none}
 .form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,79,233,.12)}
 .form-group textarea{height:120px}
 .form-success{display:none;text-align:center;padding:2rem;color:var(--accent)}
@@ -192,20 +137,16 @@ ul{list-style:none}
 .form-success h3{font-family:var(--ff-display);font-size:1.3rem;font-weight:800;margin-bottom:.5rem}
 .form-success p{color:var(--muted);font-size:.9rem}
 
-/* ===================== LEGAL PAGES ===================== */
 .legal-hero{padding:4rem clamp(1rem,5vw,4rem) 2rem;max-width:800px;margin:0 auto;text-align:center}
 .legal-hero h1{font-family:var(--ff-display);font-size:clamp(2rem,5vw,3.5rem);font-weight:800;letter-spacing:-0.04em;margin-bottom:.75rem}
 .legal-hero p{color:var(--muted);font-size:.9rem}
 .legal-content{max-width:800px;margin:0 auto;padding:1rem clamp(1rem,5vw,4rem) 5rem}
 .legal-content h2{font-family:var(--ff-display);font-size:1.3rem;font-weight:800;margin:2.5rem 0 .75rem;padding-left:1rem;border-left:3px solid var(--accent)}
-.legal-content h3{font-family:var(--ff-display);font-size:1rem;font-weight:700;margin:1.5rem 0 .5rem;color:var(--accent)}
 .legal-content p{color:var(--muted);line-height:1.85;margin-bottom:1rem;font-size:.93rem}
 .legal-content ul{padding-left:1.5rem;margin-bottom:1rem}
 .legal-content ul li{color:var(--muted);line-height:1.8;font-size:.93rem;margin-bottom:.4rem;list-style:disc}
-.legal-badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(91,79,233,.08);border:1px solid rgba(91,79,233,.2);
-             border-radius:40px;padding:.4rem 1rem;font-size:.75rem;font-family:var(--ff-display);font-weight:700;color:var(--accent);margin-bottom:2rem}
+.legal-badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(91,79,233,.08);border:1px solid rgba(91,79,233,.2);border-radius:40px;padding:.4rem 1rem;font-size:.75rem;font-family:var(--ff-display);font-weight:700;color:var(--accent);margin-bottom:2rem}
 
-/* ===================== FOOTER ===================== */
 footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;position:relative;z-index:1}
 .footer-top{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
 .footer-brand .nav-logo{display:inline-block;margin-bottom:1rem;font-size:1.75rem}
@@ -213,12 +154,10 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
 .footer-col h4{font-family:var(--ff-display);font-weight:700;font-size:.8rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:1.25rem}
 .footer-col a{display:block;color:rgba(255,255,255,.65);font-size:.875rem;margin-bottom:.75rem;transition:color .2s}
 .footer-col a:hover{color:#fff}
-.footer-bottom{display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,.1);
-               padding-top:2rem;font-size:.8rem;color:rgba(255,255,255,.35);gap:1rem;flex-wrap:wrap}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,.1);padding-top:2rem;font-size:.8rem;color:rgba(255,255,255,.35);gap:1rem;flex-wrap:wrap}
 .footer-bottom a{color:rgba(255,255,255,.35);transition:color .2s}
 .footer-bottom a:hover{color:#fff}
 
-/* ===================== NEWSLETTER ===================== */
 .newsletter{background:linear-gradient(135deg,var(--accent),#7C5FF7);padding:4rem clamp(1rem,5vw,4rem);text-align:center;position:relative;overflow:hidden;z-index:1}
 .newsletter h2{font-family:var(--ff-display);font-size:clamp(1.8rem,4vw,2.8rem);font-weight:800;color:#fff;letter-spacing:-0.03em;margin-bottom:.75rem;position:relative;z-index:1}
 .newsletter p{color:rgba(255,255,255,.75);margin-bottom:2rem;position:relative;z-index:1}
@@ -226,8 +165,8 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
 .newsletter-form input{flex:1;padding:.85rem 1.25rem;border:none;border-radius:40px;font-family:var(--ff-body);font-size:.9rem;outline:none;background:#fff}
 .newsletter-form button{padding:.85rem 1.5rem;background:var(--ink);color:#fff;border-radius:40px;font-family:var(--ff-display);font-weight:700;font-size:.875rem;white-space:nowrap;transition:transform .2s}
 .newsletter-form button:hover{transform:scale(1.03)}
+.newsletter-form button:disabled{opacity:.6;cursor:not-allowed}
 
-/* ===================== BLOG PAGE ===================== */
 .blog-header{padding:4rem clamp(1rem,5vw,4rem) 2rem;max-width:1200px;margin:0 auto}
 .blog-header h1{font-family:var(--ff-display);font-size:clamp(2.5rem,5vw,4rem);font-weight:800;letter-spacing:-0.04em;margin-bottom:.5rem}
 .blog-filters{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1.5rem}
@@ -238,28 +177,26 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
 .search-bar input{border:none;outline:none;background:none;font-family:var(--ff-body);font-size:.9rem;color:var(--ink);flex:1;width:100%}
 .search-bar span{color:var(--muted);font-size:1rem;flex-shrink:0}
 
-/* ===================== SINGLE POST ===================== */
 .single-post{max-width:760px;margin:0 auto;padding:4rem clamp(1rem,5vw,4rem)}
 .single-post-header{margin-bottom:2.5rem}
 .single-post-header h1{font-family:var(--ff-display);font-size:clamp(2rem,5vw,3.5rem);font-weight:800;letter-spacing:-0.04em;line-height:1.1;margin-bottom:1.25rem}
 .single-post-meta{display:flex;align-items:center;gap:1.5rem;color:var(--muted);font-size:.85rem;margin-bottom:1.5rem;flex-wrap:wrap}
-.single-post-cover{height:400px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:5rem;margin-bottom:3rem;position:relative;overflow:hidden}
+.single-post-cover{height:400px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:5rem;margin-bottom:3rem;position:relative;overflow:hidden;background-size:cover;background-position:center}
 .single-post-cover span{position:relative;filter:drop-shadow(0 8px 24px rgba(0,0,0,.3));animation:float 4s ease-in-out infinite}
 .post-body{font-size:1.05rem;line-height:1.85;color:var(--ink)}
 .post-body p{margin-bottom:1.5rem}
 .post-body h2{font-family:var(--ff-display);font-size:1.5rem;font-weight:800;margin:2rem 0 .75rem;letter-spacing:-0.02em}
 .post-body h3{font-family:var(--ff-display);font-size:1.15rem;font-weight:700;margin:1.5rem 0 .5rem;color:var(--accent)}
+.post-body img{max-width:100%;border-radius:8px;margin:1.5rem 0}
 .post-body blockquote{border-left:4px solid var(--accent);padding:1rem 1.5rem;margin:2rem 0;background:rgba(91,79,233,.05);border-radius:0 8px 8px 0;font-family:var(--ff-serif);font-size:1.15rem;font-style:italic;color:var(--accent)}
 .back-btn{display:inline-flex;align-items:center;gap:.5rem;font-family:var(--ff-display);font-weight:700;font-size:.875rem;color:var(--muted);margin-bottom:2rem;transition:color .2s;cursor:pointer}
 .back-btn:hover{color:var(--accent)}
 
-/* ===================== TOAST ===================== */
 .toast{position:fixed;bottom:2rem;right:2rem;background:var(--ink);color:#fff;padding:1rem 1.5rem;border-radius:12px;font-family:var(--ff-display);font-weight:600;font-size:.875rem;transform:translateY(100px);opacity:0;transition:all .4s cubic-bezier(.34,1.56,.64,1);z-index:9999;max-width:300px}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.success{border-left:4px solid #22c55e}
 .toast.error{border-left:4px solid var(--accent2)}
 
-/* ===================== ANIMATIONS ===================== */
 @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 @keyframes scrollPulse{0%,100%{opacity:1}50%{opacity:0.2}}
@@ -268,7 +205,6 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
 .reveal.visible{opacity:1;transform:translateY(0)}
 .particle{position:fixed;border-radius:50%;pointer-events:none;z-index:0;animation:drift linear infinite}
 
-/* ===================== RESPONSIVE ===================== */
 @media(max-width:900px){
   .about-hero{grid-template-columns:1fr;gap:2rem}
   .about-visual{min-height:260px}
@@ -294,9 +230,8 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
 <div id="particles"></div>
 <div class="toast" id="toast"></div>
 
-<!-- ===================== NAVBAR ===================== -->
 <nav class="nav" id="navbar">
-  <div class="nav-logo" onclick="navigate('home')">Nishu Blogs </div>
+  <div class="nav-logo" onclick="navigate('home')">Nishu Blogs</div>
   <div class="nav-links">
     <a href="#" onclick="event.preventDefault(); navigate('home')" id="nav-home">Home</a>
     <a href="#" onclick="event.preventDefault(); navigate('blog')" id="nav-blog">Blog</a>
@@ -304,9 +239,7 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
     <a href="#" onclick="event.preventDefault(); navigate('contact')" id="nav-contact">Contact</a>
     <a href="#" onclick="event.preventDefault(); navigate('contact')" class="nav-cta">Write for Us</a>
   </div>
-  <div class="hamburger" id="hamburger" onclick="toggleMenu()">
-    <span></span><span></span><span></span>
-  </div>
+  <div class="hamburger" id="hamburger" onclick="toggleMenu()"><span></span><span></span><span></span></div>
 </nav>
 
 <div class="mobile-menu" id="mobileMenu">
@@ -319,10 +252,10 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
   <a href="#" onclick="event.preventDefault(); navigate('terms');toggleMenu()">Terms & Conditions</a>
 </div>
 
-<!-- ===================== HOME PAGE ===================== -->
+<!-- ===================== HOME ===================== -->
 <div class="page active" id="page-home">
   <section class="hero">
-    <div class="hero-eyebrow">✦ Welcome to Nishu Blogs </div>
+    <div class="hero-eyebrow">✦ Welcome to Nishu Blogs</div>
     <h1 class="hero-title">
       <span>Ideas Worth</span>
       <span class="italic">Reading.</span>
@@ -332,10 +265,7 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
       <button class="btn-primary" onclick="navigate('blog')">Explore Articles</button>
       <button class="btn-outline" onclick="navigate('about')">Meet the Author</button>
     </div>
-    <div class="hero-scroll">
-      <span>Scroll</span>
-      <div class="scroll-line"></div>
-    </div>
+    <div class="hero-scroll"><span>Scroll</span><div class="scroll-line"></div></div>
   </section>
 
   <div class="stats-bar reveal">
@@ -354,51 +284,43 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
 
   <div class="newsletter reveal">
     <h2>Never Miss a Read</h2>
-    <p>Get new articles delivered to your inbox.</p>
+    <p>Get an email whenever a new article is published.</p>
     <div class="newsletter-form">
-      <input type="email" id="newsletterEmail" placeholder="your@email.com"/>
-      <button onclick="subscribeNewsletter()">Subscribe Free</button>
+      <input type="email" placeholder="your@email.com"/>
+      <button onclick="subscribeNewsletter(this)">Subscribe Free</button>
     </div>
   </div>
 </div>
 
-<!-- ===================== BLOG PAGE ===================== -->
+<!-- ===================== BLOG ===================== -->
 <div class="page" id="page-blog">
   <div class="blog-header">
     <div class="section-label">✦ All Articles</div>
-    <h1>The Nishu Blogs  Archive</h1>
+    <h1>The Nishu Blogs Archive</h1>
     <p style="color:var(--muted);margin-top:.5rem">Essays, tutorials, and stories across our categories.</p>
     <div class="search-bar">
       <span>🔍</span>
       <input type="text" id="searchInput" placeholder="Search articles..." oninput="filterPosts()"/>
     </div>
-    <div class="blog-filters">
-      <button class="filter-btn active" onclick="setFilter('All',this)">All</button>
-      <button class="filter-btn" onclick="setFilter('Technology',this)">Technology</button>
-      <button class="filter-btn" onclick="setFilter('Design',this)">Design</button>
-      <button class="filter-btn" onclick="setFilter('Culture',this)">Culture</button>
-      <button class="filter-btn" onclick="setFilter('Science',this)">Science</button>
-      <button class="filter-btn" onclick="setFilter('Life',this)">Life</button>
-      <button class="filter-btn" onclick="setFilter('Business',this)">Business</button>
-    </div>
+    <div class="blog-filters" id="blogFilters"></div>
   </div>
   <div class="blog-grid">
     <div class="posts-grid" id="allPosts"></div>
   </div>
 </div>
 
-<!-- ===================== SINGLE POST PAGE ===================== -->
+<!-- ===================== SINGLE POST ===================== -->
 <div class="page" id="page-post">
   <div class="single-post" id="singlePostContent"></div>
 </div>
 
-<!-- ===================== ABOUT PAGE ===================== -->
+<!-- ===================== ABOUT ===================== -->
 <div class="page" id="page-about">
   <div class="about-hero">
     <div class="about-img-wrap">
       <div class="about-visual">
         <div class="about-visual-card">
-          <div class="about-visual-logo">Nishu Blogs </div>
+          <div class="about-visual-logo">Nishu Blogs</div>
           <div class="about-visual-quote">“Ideas worth reading.”</div>
           <div class="about-visual-line"></div>
           <div class="about-visual-tags">
@@ -411,9 +333,9 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
       <div class="about-badge">Est. 2025</div>
     </div>
     <div class="about-content">
-      <div class="section-label">✦ About Nishu Blogs </div>
+      <div class="section-label">✦ About Nishu Blogs</div>
       <h1>A Blog Born From Curiosity</h1>
-      <p>Nishu Blogs  is a place for writing about technology, design, culture, science, and the ideas where they meet. It began as a personal journal and grew into a space for articles worth taking time over.</p>
+      <p>Nishu Blogs is a place for writing about technology, design, culture, science, and the ideas where they meet. It began as a personal journal and grew into a space for articles worth taking time over.</p>
       <p>Every piece is written with care. No clickbait, no filler, just ideas worth your time.</p>
       <p>Our belief is simple: <em>the best stories are the ones that make you think differently about something you thought you understood.</em></p>
       <div class="skill-pills">
@@ -433,7 +355,7 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
     <h2>Our Journey</h2>
     <div class="tl-item">
       <div><div class="tl-year">2025</div><div class="tl-dot"></div></div>
-      <div class="tl-content"><h4>Where It Began</h4><p>Nishu Blogs  started as a place to write down ideas, lessons, and things worth sharing, first on Blogger.</p></div>
+      <div class="tl-content"><h4>Where It Began</h4><p>Nishu Blogs started as a place to write down ideas, lessons, and things worth sharing, first on Blogger.</p></div>
     </div>
     <div class="tl-item">
       <div><div class="tl-year">Nov 2026</div><div class="tl-dot"></div></div>
@@ -451,22 +373,21 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
 
   <div class="newsletter reveal" style="margin-top:0">
     <h2>Like What We Do?</h2>
-    <p>Subscribe to get new articles as they are published.</p>
+    <p>Join the list and get an email whenever a new article is published.</p>
     <div class="newsletter-form">
       <input type="email" placeholder="your@email.com"/>
-      <button onclick="subscribeNewsletter()">Join the List</button>
+      <button onclick="subscribeNewsletter(this)">Join the List</button>
     </div>
   </div>
 </div>
 
-<!-- ===================== CONTACT PAGE ===================== -->
+<!-- ===================== CONTACT ===================== -->
 <div class="page" id="page-contact">
   <div class="contact-wrap">
     <div class="contact-info">
       <div class="section-label">✦ Get In Touch</div>
       <h1>Let's Start a Conversation</h1>
       <p>Whether you want to pitch a story, report an error, discuss a collaboration, or just say hello — we'd love to hear from you.</p>
-
       <div class="contact-detail">
         <div class="contact-icon">📍</div>
         <div class="contact-detail-text"><span>Location</span><strong>Bengaluru, India</strong></div>
@@ -512,56 +433,52 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
   </div>
 </div>
 
-<!-- ===================== PRIVACY POLICY ===================== -->
+<!-- ===================== PRIVACY ===================== -->
 <div class="page" id="page-privacy">
   <div class="legal-hero">
     <div class="section-label">✦ Legal</div>
     <h1>Privacy Policy</h1>
-    <p>Last updated: June 2025 · Effective immediately</p>
+    <p>Last updated: November 2026</p>
     <br><span class="legal-badge">🔒 Your privacy matters to us</span>
   </div>
   <div class="legal-content">
-    <p>Nishu Blogs  ("we," "us," or "our") is committed to protecting your personal information and your right to privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit Nishu Blogs .com.</p>
+    <p>Nishu Blogs ("we," "us," or "our") respects your privacy. This policy explains what information we collect when you visit nishublogs.online and how we use it.</p>
 
     <h2>1. Information We Collect</h2>
-    <p>We collect information that you voluntarily provide when you subscribe to our newsletter or submit a contact form. This may include:</p>
     <ul>
-      <li>Name and email address (newsletter subscription, contact forms)</li>
-      <li>IP address and browser type (automatically via server logs)</li>
-      <li>Pages visited and page views (anonymous site visit counts)</li>
-      <li>Device information and operating system</li>
+      <li>Your email address, if you subscribe to the newsletter or join the list.</li>
+      <li>Name, email, and message, if you send a message through the contact form.</li>
+      <li>An anonymous count of page visits and article views, used to show readership numbers.</li>
     </ul>
-    <p>We do <strong>not</strong> collect sensitive personal data such as financial information, government ID numbers, or health data.</p>
+    <p>We do <strong>not</strong> collect financial information, government ID numbers, or health data.</p>
 
     <h2>2. How We Use Your Information</h2>
     <ul>
-      <li>To send you newsletter and content updates you subscribed to</li>
-      <li>To respond to your inquiries and contact form submissions</li>
-      <li>To understand site traffic and improve our content</li>
-      <li>To detect and prevent fraud or abuse</li>
-      <li>To comply with legal obligations</li>
+      <li>To send you an email when a new article is published, if you subscribed</li>
+      <li>To reply to your messages</li>
+      <li>To understand how the site is read and improve it</li>
     </ul>
 
-    <h2>3. Cookies & Tracking</h2>
-    <p>Nishu Blogs  uses cookies and similar technologies to enhance your experience. You can control cookies through your browser settings. Disabling cookies may affect certain features of our website.</p>
+    <h2>3. Newsletter Emails</h2>
+    <p>Every newsletter email includes an unsubscribe link. Clicking it removes your address from the list immediately.</p>
 
     <h2>4. Third-Party Services</h2>
-    <p>We may use trusted third parties for hosting, email delivery, and analytics. We do not sell your personal data to any third party.</p>
+    <p>We use trusted services for hosting, email delivery, and analytics. We do not sell your personal data.</p>
 
     <h2>5. Data Retention</h2>
-    <p>We retain your personal information for as long as necessary to fulfill the purposes outlined in this policy, or as required by law. Newsletter subscribers' data is retained until they unsubscribe.</p>
+    <p>Subscriber emails are kept until you unsubscribe. Contact messages are kept so we can reply to them.</p>
 
     <h2>6. Your Rights</h2>
-    <p>Depending on your location, you may have the right to access, correct, or request deletion of your data. Contact us to exercise these rights.</p>
+    <p>You can ask us to see, correct, or delete your information at any time through the contact page.</p>
 
     <h2>7. Children's Privacy</h2>
-    <p>Nishu Blogs  is not directed at children under 13. We do not knowingly collect personal information from children.</p>
+    <p>Nishu Blogs is not directed at children under 13, and we do not knowingly collect their information.</p>
 
     <h2>8. Changes to This Policy</h2>
-    <p>We may update this Privacy Policy from time to time and will update the "Last updated" date when we do.</p>
+    <p>We may update this policy and will change the "Last updated" date when we do.</p>
 
     <h2>9. Contact Us</h2>
-    <p>For privacy-related concerns, use our <a href="#" onclick="event.preventDefault(); navigate('contact')" style="color:var(--accent)">contact form</a>.</p>
+    <p>For privacy questions, please use our <a href="#" onclick="event.preventDefault(); navigate('contact')" style="color:var(--accent)">contact page</a>.</p>
   </div>
 </div>
 
@@ -570,88 +487,75 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
   <div class="legal-hero">
     <div class="section-label">✦ Legal</div>
     <h1>Disclaimer</h1>
-    <p>Last updated: June 2025 · Please read carefully</p>
+    <p>Last updated: November 2026</p>
     <br><span class="legal-badge">⚠️ Important information</span>
   </div>
   <div class="legal-content">
-    <p>The information provided on Nishu Blogs  (Nishu Blogs .com) is for general informational and educational purposes only. All information on the site is provided in good faith; however, we make no representation or warranty of any kind, express or implied, regarding the accuracy, adequacy, validity, reliability, availability, or completeness of any information on the site.</p>
+    <p>The information on Nishu Blogs is for general information and education only. We make no guarantee about its accuracy, completeness, or suitability for any purpose.</p>
 
     <h2>1. No Professional Advice</h2>
-    <p>Nothing on Nishu Blogs  constitutes professional advice of any kind, including legal, financial, medical, psychological, or technical advice. Always consult a qualified professional before making decisions based on information found on this site.</p>
+    <p>Nothing on this site is legal, medical, financial, or other professional advice. Consult a qualified professional before acting on anything you read here.</p>
 
     <h2>2. External Links</h2>
-    <p>Nishu Blogs  may contain links to external websites that are not provided or maintained by us. We do not guarantee the accuracy or relevance of information on these websites.</p>
+    <p>Some articles link to other websites. We do not control or endorse those sites.</p>
 
-    <h2>3. Opinions & Views</h2>
-    <p>Articles on Nishu Blogs  represent the personal opinions of their authors and do not necessarily reflect the views of Nishu Blogs  as a publication.</p>
+    <h2>3. Opinions</h2>
+    <p>Articles reflect the views of their authors and not necessarily the views of Nishu Blogs.</p>
 
     <h2>4. Affiliate Disclosure</h2>
-    <p>Some articles may contain affiliate links. If you click on an affiliate link and make a purchase, we may receive a small commission at no additional cost to you. Affiliate relationships do not influence our editorial content.</p>
+    <p>Some articles may contain affiliate links. If you buy through one, we may earn a small commission at no cost to you.</p>
 
-    <h2>5. Errors and Omissions</h2>
-    <p>While we strive for accuracy, information may become outdated. If you notice an error, please contact us through the contact page.</p>
+    <h2>5. Errors</h2>
+    <p>We work to keep things accurate, but information can become outdated. If you spot a mistake, please tell us through the contact page.</p>
 
     <h2>6. Limitation of Liability</h2>
-    <p>Under no circumstance shall Nishu Blogs  or its authors be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the site.</p>
+    <p>To the fullest extent permitted by law, Nishu Blogs and its authors are not liable for any loss arising from your use of this site.</p>
 
     <h2>7. Changes</h2>
-    <p>We reserve the right to modify this disclaimer at any time. Continued use of the site following changes constitutes acceptance of the updated disclaimer.</p>
+    <p>We may update this disclaimer at any time.</p>
   </div>
 </div>
 
-<!-- ===================== TERMS & CONDITIONS ===================== -->
+<!-- ===================== TERMS ===================== -->
 <div class="page" id="page-terms">
   <div class="legal-hero">
     <div class="section-label">✦ Legal</div>
     <h1>Terms & Conditions</h1>
-    <p>Last updated: June 2025 · Effective for all users</p>
-    <br><span class="legal-badge">📄 Governing your use of Nishu Blogs </span>
+    <p>Last updated: November 2026</p>
+    <br><span class="legal-badge">📄 Governing your use of Nishu Blogs</span>
   </div>
   <div class="legal-content">
-    <p>By accessing or using Nishu Blogs  (Nishu Blogs .com), you agree to be bound by these Terms and Conditions. If you disagree with any part of these terms, you must not access the website.</p>
+    <p>By using nishublogs.online, you agree to these terms. If you do not agree, please do not use the site.</p>
 
-    <h2>1. Intellectual Property</h2>
-    <p>All content on Nishu Blogs , including articles, images, graphics, and logos, is the property of Nishu Blogs  or its contributing authors and is protected by copyright law. You may not reproduce, distribute, or create derivative works without express written permission.</p>
-
-    <h3>What You May Do</h3>
+    <h2>1. Content</h2>
+    <p>All articles, images, and design on Nishu Blogs belong to Nishu Blogs or its authors and are protected by copyright.</p>
     <ul>
-      <li>Share links to articles on social media or other platforms</li>
-      <li>Quote brief excerpts with clear attribution and a link back</li>
-      <li>Print articles for personal, non-commercial use</li>
+      <li>You may share links to articles.</li>
+      <li>You may quote short excerpts with credit and a link back.</li>
+      <li>You may not republish or scrape full articles without permission.</li>
     </ul>
 
-    <h3>What You May Not Do</h3>
-    <ul>
-      <li>Republish, scrape, or aggregate our articles without permission</li>
-      <li>Use our content for commercial purposes without a license</li>
-      <li>Remove author attribution or copyright notices</li>
-    </ul>
+    <h2>2. Acceptable Use</h2>
+    <p>Do not use the site to post unlawful content, send spam, attempt unauthorized access, or impersonate others.</p>
 
-    <h2>2. User Conduct</h2>
-    <p>When using Nishu Blogs , you agree not to post unlawful, offensive, or threatening content, distribute spam, attempt unauthorized access, or impersonate others.</p>
+    <h2>3. Newsletter</h2>
+    <p>By joining the list, you agree to receive emails when new articles are published. You can unsubscribe at any time using the link in any email.</p>
 
-    <h2>3. Newsletter Subscription</h2>
-    <p>By subscribing to our newsletter, you consent to receiving emails from Nishu Blogs . You may unsubscribe at any time. We will not share your email address with third parties for their marketing purposes.</p>
+    <h2>4. Submissions</h2>
+    <p>If you send a pitch or draft, you confirm that it is your original work. Sending a submission does not oblige us to publish it.</p>
 
-    <h2>4. Submissions & Pitches</h2>
-    <p>When you submit an article pitch, you represent that you are the original author and that the work does not infringe any third-party rights. Unsolicited submissions do not create an obligation to publish.</p>
+    <h2>5. Governing Law</h2>
+    <p>These terms are governed by the laws of India.</p>
 
-    <h2>5. Termination</h2>
-    <p>We reserve the right to restrict access to Nishu Blogs  for any user who violates these Terms.</p>
-
-    <h2>6. Governing Law</h2>
-    <p>These Terms are governed by and construed in accordance with the laws of India.</p>
-
-    <h2>7. Contact</h2>
-    <p>For questions about these Terms, please use our <a href="#" onclick="event.preventDefault(); navigate('contact')" style="color:var(--accent)">contact page</a>.</p>
+    <h2>6. Contact</h2>
+    <p>Questions about these terms can be sent through our <a href="#" onclick="event.preventDefault(); navigate('contact')" style="color:var(--accent)">contact page</a>.</p>
   </div>
 </div>
 
-<!-- ===================== FOOTER ===================== -->
-<footer id="siteFooter">
+<footer>
   <div class="footer-top">
     <div class="footer-brand">
-      <div class="nav-logo">Nishu Blogs </div>
+      <div class="nav-logo">Nishu Blogs</div>
       <p>Thoughtful writing on technology, design, culture, and the ideas shaping our world.</p>
     </div>
     <div class="footer-col">
@@ -663,10 +567,7 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
     </div>
     <div class="footer-col">
       <h4>Categories</h4>
-      <a href="#" onclick="event.preventDefault(); navigate('blog');setFilter('Technology')">Technology</a>
-      <a href="#" onclick="event.preventDefault(); navigate('blog');setFilter('Design')">Design</a>
-      <a href="#" onclick="event.preventDefault(); navigate('blog');setFilter('Culture')">Culture</a>
-      <a href="#" onclick="event.preventDefault(); navigate('blog');setFilter('Science')">Science</a>
+      <div id="footerCategories"></div>
     </div>
     <div class="footer-col">
       <h4>Legal</h4>
@@ -677,7 +578,7 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
     </div>
   </div>
   <div class="footer-bottom">
-    <span>© 2026 Nishu Blogs . All rights reserved.</span>
+    <span>© 2026 Nishu Blogs. All rights reserved.</span>
     <div style="display:flex;gap:1.5rem">
       <a href="#" onclick="event.preventDefault(); navigate('privacy')">Privacy</a>
       <a href="#" onclick="event.preventDefault(); navigate('terms')">Terms</a>
@@ -687,15 +588,14 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
   </div>
 </footer>
 
-<!-- ===================== SCRIPTS ===================== -->
 <script>
 /* ====== DATA STORE ====== */
 const API = 'https://bolgerr-api.shauryabolgerr.workers.dev';
+const BLOG_START_YEAR = 2025;
 
 let POSTS = [];
 let currentPage = 'home';
 let currentFilter = 'All';
-const BLOG_START_YEAR = 2025;
 
 function setStat(id, value) {
   const el = document.getElementById(id);
@@ -720,11 +620,24 @@ async function loadPosts() {
     const res = await fetch(`${API}/api/posts`);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    if (data.success && data.data?.length) {
-      POSTS = data.data;
-    }
+    if (data.success && data.data?.length) POSTS = data.data;
   } catch (err) {
     console.warn('Could not load posts from server.', err);
+  }
+}
+
+function buildCategoryUI() {
+  const cats = [...new Set(POSTS.filter(p => p.published !== false).map(p => p.category).filter(Boolean))];
+  const filterBox = document.getElementById('blogFilters');
+  if (filterBox) {
+    filterBox.innerHTML = `<button class="filter-btn active" onclick="setFilter('All',this)">All</button>` +
+      cats.map(c => `<button class="filter-btn" onclick="setFilter('${c.replace(/'/g, "\\'")}',this)">${escapeHtml(c)}</button>`).join('');
+  }
+  const footerBox = document.getElementById('footerCategories');
+  if (footerBox) {
+    footerBox.innerHTML = cats.map(c =>
+      `<a href="#" onclick="event.preventDefault(); navigate('blog');setFilter('${c.replace(/'/g, "\\'")}')">${escapeHtml(c)}</a>`
+    ).join('');
   }
 }
 
@@ -740,9 +653,7 @@ function navigate(page) {
   currentPage = page;
 
   const currentHash = location.hash.replace('#', '') || 'home';
-  if (currentHash !== page) {
-    history.replaceState(null, '', '#' + page);
-  }
+  if (currentHash !== page) history.replaceState(null, '', '#' + page);
 
   const navMap = {home:'nav-home', blog:'nav-blog', about:'nav-about', contact:'nav-contact'};
   if (navMap[page]) document.getElementById(navMap[page])?.classList.add('active');
@@ -751,30 +662,32 @@ function navigate(page) {
 
   if (page === 'home') renderFeatured();
   if (page === 'blog') renderAllPosts();
-
   setTimeout(triggerReveal, 100);
 }
 
 /* ====== RENDER POSTS ====== */
-function createPostCard(post, featured=false) {
-  const el = document.createElement('div');
-  el.className = 'post-card tilt-card' + (featured ? ' featured' : '');
-  const imgStyle = post.coverImage
+function coverStyle(post) {
+  return post.coverImage
     ? `background-image:url('${post.coverImage}');background-size:cover;background-position:center`
     : '';
+}
+
+function createPostCard(post, featured = false) {
+  const el = document.createElement('div');
+  el.className = 'post-card tilt-card' + (featured ? ' featured' : '');
   el.innerHTML = `
-    <div class="post-card-img" style="${imgStyle}"><span>${post.coverImage ? '' : post.emoji}</span></div>
+    <div class="post-card-img" style="${coverStyle(post)}"><span>${post.coverImage ? '' : escapeHtml(post.emoji || '')}</span></div>
     <div class="tilt-shine"></div>
     <div class="post-card-body">
-      <div class="post-tag">${post.category}</div>
-      <div class="post-title">${post.title}</div>
-      <div class="post-excerpt">${post.excerpt}</div>
+      <div class="post-tag">${escapeHtml(post.category)}</div>
+      <div class="post-title">${escapeHtml(post.title)}</div>
+      <div class="post-excerpt">${escapeHtml(post.excerpt)}</div>
       <div class="post-meta">
         <div class="post-author">
-          <div class="avatar">${post.author.split(' ').map(n=>n[0]).join('')}</div>
-          <span>${post.author}</span>
+          <div class="avatar">${escapeHtml((post.author || 'NB').split(' ').map(n => n[0]).join(''))}</div>
+          <span>${escapeHtml(post.author)}</span>
         </div>
-        <span>${post.readTime} · ${post.date}</span>
+        <span>${escapeHtml(post.readTime)} · ${escapeHtml(post.date)}</span>
       </div>
     </div>`;
   el.addEventListener('click', () => openPost(post.id));
@@ -786,8 +699,8 @@ function renderFeatured() {
   const container = document.getElementById('featuredPosts');
   if (!container) return;
   container.innerHTML = '';
-  const featured = POSTS.filter(p => p.featured);
-  const others = POSTS.filter(p => !p.featured);
+  const featured = POSTS.filter(p => p.featured && p.published !== false);
+  const others = POSTS.filter(p => !p.featured && p.published !== false);
   featured.forEach((p, i) => container.appendChild(createPostCard(p, i === 0)));
   others.forEach(p => container.appendChild(createPostCard(p)));
 }
@@ -798,6 +711,7 @@ function renderAllPosts() {
   container.innerHTML = '';
   const search = document.getElementById('searchInput')?.value?.toLowerCase() || '';
   const filtered = POSTS.filter(p => {
+    if (p.published === false) return false;
     const matchCat = currentFilter === 'All' || p.category === currentFilter;
     const matchSearch = !search || p.title.toLowerCase().includes(search) || p.excerpt.toLowerCase().includes(search);
     return matchCat && matchSearch;
@@ -813,6 +727,7 @@ function setFilter(cat, btn) {
   currentFilter = cat;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
+  else document.querySelectorAll('.filter-btn').forEach(b => { if (b.textContent === cat) b.classList.add('active'); });
   renderAllPosts();
 }
 
@@ -828,18 +743,18 @@ function openPost(id) {
   container.innerHTML = `
     <div class="back-btn" onclick="navigate('blog')">← Back to articles</div>
     <div class="single-post-header">
-      <div class="post-tag">${post.category}</div>
-      <h1>${post.title}</h1>
+      <div class="post-tag">${escapeHtml(post.category)}</div>
+      <h1>${escapeHtml(post.title)}</h1>
       <div class="single-post-meta">
         <div class="post-author" style="display:flex;align-items:center;gap:.5rem">
-          <div class="avatar">${post.author.split(' ').map(n=>n[0]).join('')}</div>
-          <span>${post.author}</span>
+          <div class="avatar">${escapeHtml((post.author || 'NB').split(' ').map(n => n[0]).join(''))}</div>
+          <span>${escapeHtml(post.author)}</span>
         </div>
-        <span>📅 ${post.date}</span>
-        <span>⏱ ${post.readTime} read</span>
+        <span>📅 ${escapeHtml(post.date)}</span>
+        <span>⏱ ${escapeHtml(post.readTime)} read</span>
       </div>
     </div>
-    <div class="single-post-cover" style="${post.coverImage ? `background-image:url('${post.coverImage}');background-size:cover;background-position:center` : ''}"><span>${post.coverImage ? '' : post.emoji}</span></div>
+    <div class="single-post-cover" style="${coverStyle(post)}"><span>${post.coverImage ? '' : escapeHtml(post.emoji || '')}</span></div>
     <div class="post-body">${post.body}</div>
     <div style="margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
       <div>
@@ -856,7 +771,7 @@ function openPost(id) {
 }
 
 function copyLink() {
-  navigator.clipboard?.writeText(window.location.href).catch(()=>{});
+  navigator.clipboard?.writeText(window.location.href).catch(() => {});
   showToast('Link copied to clipboard!', 'success');
 }
 
@@ -873,7 +788,7 @@ function submitContact(event) {
     showToast('Please fill in all required fields.', 'error');
     return;
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!isValidEmail(email)) {
     showToast('Please enter a valid email address.', 'error');
     return;
   }
@@ -882,19 +797,15 @@ function submitContact(event) {
   btn.textContent = 'Sending…';
   btn.disabled = true;
 
-  const payload = { firstName: fname, lastName: lname, email, subject, message };
-
   (async () => {
     try {
       const response = await fetch(`${API}/api/contact`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ firstName: fname, lastName: lname, email, subject, message }),
       });
       const data = await response.json().catch(() => null);
-      if (!response.ok || !data?.success) {
-        throw new Error(data?.message || `Submission failed (${response.status})`);
-      }
+      if (!response.ok || !data?.success) throw new Error(data?.message || `Submission failed (${response.status})`);
       document.getElementById('contactFormInner').style.display = 'none';
       document.getElementById('formSuccess').style.display = 'block';
       showToast('Message sent successfully!', 'success');
@@ -907,20 +818,40 @@ function submitContact(event) {
   })();
 }
 
-/* ====== NEWSLETTER ====== */
-function subscribeNewsletter() {
-  const input = document.getElementById('newsletterEmail') || document.querySelector('.newsletter-form input');
+/* ====== NEWSLETTER (Subscribe Free and Join the List) ====== */
+function isValidEmail(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+async function subscribeNewsletter(btn) {
+  const box = btn?.closest('.newsletter');
+  const input = box?.querySelector('input[type="email"]');
   const email = input?.value?.trim();
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!email || !isValidEmail(email)) {
     showToast('Please enter a valid email address.', 'error');
     return;
   }
-  if (input) input.value = '';
-  showToast('🎉 Thanks for subscribing!', 'success');
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch(`${API}/api/subscribe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.success) throw new Error(data?.message || 'Subscription failed');
+    if (input) input.value = '';
+    showToast('🎉 Thanks for subscribing! You will get an email when a new article is published.', 'success');
+  } catch (err) {
+    console.error(err);
+    showToast('Could not subscribe right now. Please try again.', 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 /* ====== TOAST ====== */
-function showToast(msg, type='success') {
+function showToast(msg, type = 'success') {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast ' + type + ' show';
@@ -945,24 +876,22 @@ function triggerReveal() {
   });
 }
 
-/* ====== 3D TILT EFFECT ====== */
+/* ====== 3D TILT ====== */
 function initTilt(card) {
   card.addEventListener('mousemove', e => {
     const rect = card.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width - 0.5;
     const y = (e.clientY - rect.top) / rect.height - 0.5;
-    card.style.transform = `perspective(600px) rotateX(${-y*12}deg) rotateY(${x*12}deg) translateY(-6px)`;
+    card.style.transform = `perspective(600px) rotateX(${-y * 12}deg) rotateY(${x * 12}deg) translateY(-6px)`;
   });
-  card.addEventListener('mouseleave', () => {
-    card.style.transform = '';
-  });
+  card.addEventListener('mouseleave', () => { card.style.transform = ''; });
 }
 
 /* ====== CANVAS BACKGROUND ====== */
 (function initCanvas() {
   const canvas = document.getElementById('canvas3d');
   const ctx = canvas.getContext('2d');
-  let W, H, nodes = [], animFrame;
+  let W, H, nodes = [];
 
   function resize() {
     W = canvas.width = window.innerWidth;
@@ -983,15 +912,13 @@ function initTilt(card) {
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
-
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const dx = nodes[i].x - nodes[j].x;
         const dy = nodes[i].y - nodes[j].y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         if (dist < 130) {
-          const alpha = (1 - dist / 130) * 0.25;
-          ctx.strokeStyle = `hsla(250,60%,65%,${alpha})`;
+          ctx.strokeStyle = `hsla(250,60%,65%,${(1 - dist / 130) * 0.25})`;
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(nodes[i].x, nodes[i].y);
@@ -1000,7 +927,6 @@ function initTilt(card) {
         }
       }
     }
-
     nodes.forEach(n => {
       ctx.beginPath();
       ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
@@ -1011,8 +937,7 @@ function initTilt(card) {
       if (n.x < 0 || n.x > W) n.vx *= -1;
       if (n.y < 0 || n.y > H) n.vy *= -1;
     });
-
-    animFrame = requestAnimationFrame(draw);
+    requestAnimationFrame(draw);
   }
 
   resize();
@@ -1024,7 +949,7 @@ function initTilt(card) {
 /* ====== FLOATING PARTICLES ====== */
 (function initParticles() {
   const container = document.getElementById('particles');
-  const shapes = ['◆','✦','✶','○','◇'];
+  const shapes = ['◆', '✦', '✶', '○', '◇'];
   for (let i = 0; i < 20; i++) {
     const p = document.createElement('div');
     p.className = 'particle';
@@ -1039,12 +964,16 @@ function initTilt(card) {
   }
 })();
 
+function escapeHtml(str) {
+  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 /* ====== INIT ====== */
-// Count every page load as a site visit
 fetch(`${API}/api/visit`, { method: 'POST' }).catch(() => {});
 
 const initialPage = location.hash.replace('#', '') || 'home';
 loadPosts().then(() => {
+  buildCategoryUI();
   updateStats();
   const match = initialPage.match(/^post-(\d+)$/);
   if (match) openPost(Number(match[1]));
@@ -1055,15 +984,12 @@ setTimeout(triggerReveal, 500);
 
 window.addEventListener('hashchange', () => {
   const page = location.hash.replace('#', '') || 'home';
-  if (page !== currentPage && document.getElementById('page-' + page)) {
-    navigate(page);
-  }
+  const match = page.match(/^post-(\d+)$/);
+  if (match) openPost(Number(match[1]));
+  else if (page !== currentPage && document.getElementById('page-' + page)) navigate(page);
 });
 
-const submitButton = document.getElementById('contactSubmitButton');
-if (submitButton) {
-  submitButton.addEventListener('click', event => submitContact(event));
-}
+document.getElementById('contactSubmitButton')?.addEventListener('click', event => submitContact(event));
 </script>
 </body>
 </html>
