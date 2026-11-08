@@ -616,13 +616,19 @@ async function updateStats() {
 }
 
 async function loadPosts() {
-  try {
-    const res = await fetch(`${API}/api/posts`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (data.success && data.data?.length) POSTS = data.data;
-  } catch (err) {
-    console.warn('Could not load posts from server.', err);
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch(`${API}/api/posts`, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data.success && data.data?.length) {
+        POSTS = data.data;
+        return;
+      }
+    } catch (err) {
+      console.warn(`Posts request failed (attempt ${attempt})`, err);
+    }
+    await new Promise(r => setTimeout(r, 1000 * attempt));
   }
 }
 
@@ -640,6 +646,7 @@ function buildCategoryUI() {
     ).join('');
   }
 }
+
 
 /* ====== NAVIGATION ====== */
 function navigate(page) {
