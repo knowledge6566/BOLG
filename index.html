@@ -615,21 +615,32 @@ async function updateStats() {
   } catch {}
 }
 
+let loadError = '';
+
 async function loadPosts() {
+  loadError = '';
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const res = await fetch(`${API}/api/posts`, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`server responded with ${res.status}`);
       const data = await res.json();
-      if (data.success && data.data?.length) {
-        POSTS = data.data;
-        return;
+      if (data.success) {
+        POSTS = data.data || [];
+        if (POSTS.length) return;
+        loadError = 'The server returned no published articles.';
+      } else {
+        loadError = data.message || 'The server reported an error.';
       }
     } catch (err) {
+      loadError = `Could not reach the server (${err.message}).`;
       console.warn(`Posts request failed (attempt ${attempt})`, err);
     }
     await new Promise(r => setTimeout(r, 1000 * attempt));
   }
+}
+
+function emptyMessage() {
+  return `<p style="color:var(--muted);padding:2rem;grid-column:1/-1">No articles to show right now. ${escapeHtml(loadError)}</p>`;
 }
 
 function buildCategoryUI() {
@@ -705,7 +716,7 @@ function createPostCard(post, featured = false) {
 function renderFeatured() {
   const container = document.getElementById('featuredPosts');
   if (!container) return;
-  container.innerHTML = '';
+  container.innerHTML = '';  if (!POSTS.length) { container.innerHTML = emptyMessage(); return; }
   const featured = POSTS.filter(p => p.featured && p.published !== false);
   const others = POSTS.filter(p => !p.featured && p.published !== false);
   featured.forEach((p, i) => container.appendChild(createPostCard(p, i === 0)));
@@ -715,7 +726,7 @@ function renderFeatured() {
 function renderAllPosts() {
   const container = document.getElementById('allPosts');
   if (!container) return;
-  container.innerHTML = '';
+  container.innerHTML = '';  if (!POSTS.length) { container.innerHTML = emptyMessage(); return; }
   const search = document.getElementById('searchInput')?.value?.toLowerCase() || '';
   const filtered = POSTS.filter(p => {
     if (p.published === false) return false;
