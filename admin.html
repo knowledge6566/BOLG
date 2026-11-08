@@ -356,7 +356,7 @@ tr:hover td{background:rgba(91,79,233,.03)}
               <h3>Categorise</h3>
               <div class="field">
                 <label>Category</label>
-                <input type="text" id="postCategory" list="categoryList" placeholder="Type or pick a category" value="Technology"/>
+                <input type="text" id="postCategory" list="categoryList" placeholder="Pick a category or type your own" value="Technology" autocomplete="off" onfocus="this.select()"/>
                 <datalist id="categoryList">
                   <option value="Technology"></option>
                   <option value="Design"></option>
