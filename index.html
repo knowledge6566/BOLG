@@ -621,7 +621,7 @@ async function loadPosts() {
   loadError = '';
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
-      const res = await fetch(`${API}/api/posts`, { cache: 'no-store' });
+      const res = await fetch(`${API}/api/posts`);
       if (!res.ok) throw new Error(`server responded with ${res.status}`);
       const data = await res.json();
       if (data.success) {
@@ -690,9 +690,39 @@ function coverStyle(post) {
     : '';
 }
 
+const coverRequests = new Map();
+
+function loadCoverImage(post) {
+  if (post.coverImage) return Promise.resolve(post.coverImage);
+  if (!coverRequests.has(post.id)) {
+    coverRequests.set(post.id, fetch(`${API}/api/posts/${post.id}/cover`)
+      .then(res => res.ok ? res.json() : null)
+      .then(result => {
+        post.coverImage = result?.data?.coverImage || '';
+        return post.coverImage;
+      })
+      .catch(() => ''));
+  }
+  return coverRequests.get(post.id);
+}
+
+function hydrateCoverImage(post) {
+  if (post.coverImage) return;
+  loadCoverImage(post).then(coverImage => {
+    if (!coverImage) return;
+    document.querySelectorAll(`.post-card[data-post-id="${post.id}"] .post-card-img`)
+      .forEach(image => {
+        image.style.backgroundImage = `url('${coverImage}')`;
+        const emoji = image.querySelector('span');
+        if (emoji) emoji.textContent = '';
+      });
+  });
+}
+
 function createPostCard(post, featured = false) {
   const el = document.createElement('div');
   el.className = 'post-card tilt-card' + (featured ? ' featured' : '');
+  el.dataset.postId = post.id;
   el.innerHTML = `
     <div class="post-card-img" style="${coverStyle(post)}"><span>${post.coverImage ? '' : escapeHtml(post.emoji || '')}</span></div>
     <div class="tilt-shine"></div>
@@ -710,6 +740,7 @@ function createPostCard(post, featured = false) {
     </div>`;
   el.addEventListener('click', () => openPost(post.id));
   initTilt(el);
+  hydrateCoverImage(post);
   return el;
 }
 
@@ -752,12 +783,26 @@ function setFilter(cat, btn) {
 function filterPosts() { renderAllPosts(); }
 
 /* ====== SINGLE POST ====== */
-function openPost(id) {
+async function openPost(id) {
   const post = POSTS.find(p => p.id === id);
   if (!post) return;
   fetch(`${API}/api/posts/${id}/view`, { method: 'POST' }).catch(() => {});
 
   const container = document.getElementById('singlePostContent');
+  container.innerHTML = '<p style="color:var(--muted);padding:2rem 0">Loading article…</p>';
+  navigate('post');
+  let fullPost;
+  try {
+    const res = await fetch(`${API}/api/posts/${id}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(`server responded with ${res.status}`);
+    const data = await res.json();
+    if (!data.success || !data.data) throw new Error('article was not returned');
+    fullPost = data.data;
+  } catch (err) {
+    container.innerHTML = `<p style="color:var(--muted);padding:2rem 0">Could not load this article. ${escapeHtml(err.message)}</p>`;
+    return;
+  }
+
   container.innerHTML = `
     <div class="back-btn" onclick="navigate('blog')">← Back to articles</div>
     <div class="single-post-header">
@@ -773,7 +818,7 @@ function openPost(id) {
       </div>
     </div>
     <div class="single-post-cover" style="${coverStyle(post)}"><span>${post.coverImage ? '' : escapeHtml(post.emoji || '')}</span></div>
-    <div class="post-body">${post.body}</div>
+    <div class="post-body">${fullPost.body || ''}</div>
     <div style="margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
       <div>
         <div style="font-family:var(--ff-display);font-weight:700;margin-bottom:.25rem">Enjoyed this read?</div>
@@ -785,7 +830,6 @@ function openPost(id) {
       </div>
     </div>`;
 
-  navigate('post');
 }
 
 function copyLink() {
