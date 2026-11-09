@@ -24,11 +24,18 @@ function corsHeaders(request) {
   };
 }
 
-function json(request, data, status = 200) {
+function json(request, data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { "Content-Type": "application/json", ...corsHeaders(request) },
+    headers: { "Content-Type": "application/json", ...corsHeaders(request), ...extraHeaders },
   });
+}
+
+let publicPostsCache = { expiresAt: 0, data: null };
+
+async function invalidatePostsCache(env) {
+  publicPostsCache = { expiresAt: 0, data: null };
+  if (env.POSTS_CACHE) await env.POSTS_CACHE.delete("published");
 }
 
 function isAuthorized(request, env) {
@@ -79,6 +86,7 @@ async function safeNotify(env, post) {
 
 async function publishAndNotify(env) {
   const title = await publishDailyArticle(env);
+  await invalidatePostsCache(env);
   const post = await env.DB.prepare(
     "SELECT * FROM posts WHERE published = 1 ORDER BY id DESC LIMIT 1"
   ).first();
@@ -99,9 +107,52 @@ async function getPosts(request, env, url) {
   const wantsAll = url.searchParams.get("admin") === "true" && isAuthorized(request, env);
   const sql = wantsAll
     ? "SELECT * FROM posts ORDER BY id DESC"
-    : "SELECT * FROM posts WHERE published = 1 ORDER BY id DESC";
-  const { results } = await env.DB.prepare(sql).all();
-  return json(request, { success: true, data: results.map(toPost) });
+    : `SELECT id, title, excerpt, author, readTime, category, emoji,
+         featured, published, views, postDate, seoTitle, slug, metaDescription, keyword, labels
+       FROM posts WHERE published = 1 ORDER BY id DESC`;
+  let data;
+  if (!wantsAll && env.POSTS_CACHE) {
+    data = await env.POSTS_CACHE.get("published", "json");
+  }
+  if (!wantsAll && !data && publicPostsCache.expiresAt > Date.now()) {
+    data = publicPostsCache.data;
+  } else {
+    if (!data) {
+      const { results } = await env.DB.prepare(sql).all();
+      data = results.map(toPost);
+      if (!wantsAll) {
+        publicPostsCache = { expiresAt: Date.now() + 30_000, data };
+        if (env.POSTS_CACHE) {
+          await env.POSTS_CACHE.put("published", JSON.stringify(data), { expirationTtl: 300 });
+        }
+      }
+    }
+  }
+  const headers = !wantsAll
+    ? { "Cache-Control": "public, max-age=30, s-maxage=300" }
+    : {};
+  return json(request, { success: true, data }, 200, headers);
+}
+
+async function getPost(request, env, id) {
+  const row = await env.DB.prepare(
+    "SELECT * FROM posts WHERE id = ? AND published = 1"
+  ).bind(id).first();
+  if (!row) return json(request, { success: false, message: "Post not found." }, 404);
+  return json(request, { success: true, data: toPost(row) });
+}
+
+async function getPostCover(request, env, id) {
+  const row = await env.DB.prepare(
+    "SELECT coverImage FROM posts WHERE id = ? AND published = 1"
+  ).bind(id).first();
+  if (!row) return json(request, { success: false, message: "Post not found." }, 404);
+  return json(
+    request,
+    { success: true, data: { coverImage: row.coverImage || "" } },
+    200,
+    { "Cache-Control": "public, max-age=300, s-maxage=3600" }
+  );
 }
 
 async function createPost(request, env) {
@@ -115,6 +166,7 @@ async function createPost(request, env) {
   const row = await env.DB.prepare("SELECT * FROM posts WHERE id = ?")
     .bind(r.meta.last_row_id)
     .first();
+  await invalidatePostsCache(env);
   if (row && row.published) await safeNotify(env, row);
   return json(request, { success: true, data: toPost(row) }, 201);
 }
@@ -127,11 +179,13 @@ async function updatePost(request, env, id) {
        coverImage=?, featured=?, published=?, seoTitle=?, slug=?, metaDescription=?, keyword=?, labels=?
      WHERE id=?`
   ).bind(...postValues(p), id).run();
+  await invalidatePostsCache(env);
   return json(request, { success: true });
 }
 
 async function deletePost(request, env, id) {
   await env.DB.prepare("DELETE FROM posts WHERE id = ?").bind(id).run();
+  await invalidatePostsCache(env);
   return json(request, { success: true });
 }
 
@@ -221,6 +275,7 @@ async function fixOldPosts(request, env) {
       fixed++;
     }
   }
+  if (fixed) await invalidatePostsCache(env);
   return json(request, { success: true, fixed });
 }
 
@@ -239,6 +294,7 @@ export default {
     }
 
     const postId = pathname.match(/^\/api\/posts\/(\d+)$/)?.[1];
+    const coverId = pathname.match(/^\/api\/posts\/(\d+)\/cover$/)?.[1];
     const viewId = pathname.match(/^\/api\/posts\/(\d+)\/view$/)?.[1];
     const contactReadId = pathname.match(/^\/api\/contacts\/(\d+)\/read$/)?.[1];
 
@@ -264,6 +320,8 @@ export default {
       if (pathname === "/api/subscribers" && method === "GET") return await subscribersHandler(request, env);
       if (pathname === "/api/posts" && method === "GET") return await getPosts(request, env, url);
       if (pathname === "/api/posts" && method === "POST") return await createPost(request, env);
+      if (coverId && method === "GET") return await getPostCover(request, env, coverId);
+      if (postId && method === "GET") return await getPost(request, env, postId);
       if (postId && method === "PUT") return await updatePost(request, env, postId);
       if (postId && method === "DELETE") return await deletePost(request, env, postId);
       if (viewId && method === "POST") return await incrementViews(request, env, viewId);

@@ -9,6 +9,12 @@
       "database_id": "bd6caeb5-b44e-4529-91d5-0ecb846d9cbd"
     }
   ],
+  "kv_namespaces": [
+    {
+      "binding": "POSTS_CACHE",
+      "id": "b10196cdffa94ca48f75c727c60858f1"
+    }
+  ],
   "triggers": {
     "crons": ["30 3 * * *", "30 13 * * *"]
   },

@@ -21,6 +21,13 @@ Currently, the API is **open** (GET endpoints are public, POST/PUT/DELETE can be
 GET /api/posts
 ```
 
+The listing response contains post metadata and excerpts, but omits the full
+`body` HTML and cover image data to keep the response small. Fetch the full article with
+`GET /api/posts/:id`.
+
+Cover images for cards can be loaded independently with
+`GET /api/posts/:id/cover`.
+
 **Query Parameters:**
 - `category` (string) - Filter by category: "Technology", "Design", "Culture", "Science", "Life", "Business"
 - `search` (string) - Search in title, excerpt, author
@@ -65,7 +72,6 @@ curl "http://localhost:3000/api/posts?category=Technology&search=language&sort=v
       "readTime": "7 min",
       "date": "2025-06-10",
       "excerpt": "Big AI is grabbing headlines, but the real shift is happening at the edge...",
-      "body": "<p>Full HTML content...</p>",
       "featured": true,
       "views": 3241,
       "published": true
