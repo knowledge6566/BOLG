@@ -129,7 +129,7 @@ Use only straight double quotes. Do not put line breaks inside string values; wr
   "readTime": "6 min",
   "contentMarkdown": "Full article in markdown"
 }
-
+Pick the category that best fits the topic you chose. Use only the allowed categories, and choose the most specific one. Do not default to the first one.
 Allowed categories: ${categories.join(", ")}
 `;
 
@@ -143,7 +143,8 @@ Allowed categories: ${categories.join(", ")}
   if (!article.title || !article.excerpt || !article.contentMarkdown) {
     throw new Error("AI returned an incomplete article.");
   }
-  if (!categories.includes(article.category)) article.category = categories[0];
+  const matched = categories.find(c => c.toLowerCase() === String(article.category || "").trim().toLowerCase());
+  article.category = matched || (env.DEFAULT_CATEGORY || categories[0]);
 
   await env.DB.prepare(
     `INSERT INTO posts (title, excerpt, body, author, readTime, category, emoji, coverImage, featured, published)
