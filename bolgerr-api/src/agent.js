@@ -88,7 +88,7 @@ async function callModel(env, model, prompt) {
 }
 
 async function generateAndSave(env, model) {
-  const categories = (env.BLOG_CATEGORIES || "Technology").split(",").map(s => s.trim());
+  const categories = (env.BLOG_CATEGORIES || "Technology").split(",").map(s => s.trim()).filter(Boolean);
   const words = Number(env.ARTICLE_WORDS || 1200);
   const focus = env.TOPIC_FOCUS || "technology, AI, web development, software, design, internet";
 
@@ -98,7 +98,7 @@ async function generateAndSave(env, model) {
   const previousTopics = results.map((r, i) => `${i + 1}. ${r.title}`).join("\n") || "(none)";
 
   const prompt = `
-You are the editorial AI for Bolgerr .
+You are the editorial AI for Nishu Blogs.
 
 Choose ONE useful, original topic for today's blog article.
 
@@ -118,13 +118,15 @@ Rules:
 - No title inside contentMarkdown.
 - Use natural English and make it SEO-friendly without keyword stuffing.
 
+Pick the category that best fits the topic you chose. Use only the allowed categories, and choose the most specific one. Do not default to the first one.
+
 Return ONLY valid JSON. No text before or after the JSON.
 Use only straight double quotes. Do not put line breaks inside string values; write \\n instead.
 
 {
   "title": "Article title",
   "excerpt": "Short 1-2 sentence summary",
-  "category": "one of the allowed categories",
+  "category": "one of the allowed categories, copied exactly",
   "emoji": "one emoji",
   "readTime": "6 min",
   "contentMarkdown": "Full article in markdown"
@@ -136,6 +138,8 @@ Allowed categories: ${categories.join(", ")}
   const text = await callModel(env, model, prompt);
 
   const article = parseJson(text);
+  console.log("Model category:", JSON.stringify(article.category), "Allowed:", categories.join("|"));
+
   article.title = fixMojibake(article.title);
   article.excerpt = fixMojibake(article.excerpt);
   article.contentMarkdown = fixMojibake(article.contentMarkdown);
@@ -143,7 +147,10 @@ Allowed categories: ${categories.join(", ")}
   if (!article.title || !article.excerpt || !article.contentMarkdown) {
     throw new Error("AI returned an incomplete article.");
   }
-  if (!categories.includes(article.category)) article.category = categories[0];
+
+  const wanted = String(article.category || "").trim().toLowerCase();
+  const matched = categories.find(c => c.toLowerCase() === wanted);
+  article.category = matched || (env.DEFAULT_CATEGORY || categories[0]);
 
   await env.DB.prepare(
     `INSERT INTO posts (title, excerpt, body, author, readTime, category, emoji, coverImage, featured, published)
@@ -152,7 +159,7 @@ Allowed categories: ${categories.join(", ")}
     article.title,
     article.excerpt,
     markdownToHtml(article.contentMarkdown),
-    env.BLOG_AUTHOR || "Bolgerr ",
+    env.BLOG_AUTHOR || "Nishu Blogs",
     article.readTime || "6 min",
     article.category,
     article.emoji || "📝",

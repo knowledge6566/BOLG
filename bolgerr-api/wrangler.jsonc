@@ -19,8 +19,8 @@
     "crons": ["30 3 * * *", "30 13 * * *"]
   },
   "vars": {
-    "BLOG_CATEGORIES": "Technology,Design,Culture,Science,Life,Business,culture,design,sciencetechnology",
-    "ARTICLE_WORDS": "1200",
+               "BLOG_CATEGORIES": "Technology,Design,Culture,Science,Life,Business,Entertainment",
+    "TOPIC_FOCUS": "technology, design, culture, science, everyday life, business, entertainment, movies and music",
    "BLOG_AUTHOR": "Nishu Blogs"
   },
   "observability": {
