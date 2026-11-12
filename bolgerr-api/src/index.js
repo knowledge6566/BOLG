@@ -6,7 +6,7 @@ import {
   unsubscribe,
   notifySubscribers,
 } from "./subscribers.js";
-
+import { getPlusPrice, setPlusPrice, createPlusOrder, verifyPlusPayment } from "./plus.js";
 const ALLOWED_ORIGINS = [
   "https://knowledge6566.github.io",
   "https://nishublogs.online",
@@ -331,7 +331,10 @@ export default {
       if (pathname === "/api/visit" && method === "POST") return await recordVisit(request, env);
       if (pathname === "/api/stats" && method === "GET") return await getStats(request, env);
       if (pathname === "/api/admin/fix-encoding" && method === "POST") return await fixOldPosts(request, env);
-
+      if (pathname === "/api/plus/price" && method === "GET") return await getPlusPrice(request, env);
+      if (pathname === "/api/plus/price" && method === "PUT") return await setPlusPrice(request, env);
+      if (pathname === "/api/plus/order" && method === "POST") return await createPlusOrder(request, env);
+      if (pathname === "/api/plus/verify" && method === "POST") return await verifyPlusPayment(request, env);
       if (pathname === "/api/agent/run" && method === "POST") {
         const title = await publishAndNotify(env);
         return json(request, { success: true, title }, 201);
