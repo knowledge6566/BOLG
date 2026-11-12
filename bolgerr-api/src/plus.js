@@ -148,3 +148,43 @@ export async function verifyPlusPayment(request, env) {
 
   return reply(request, { success: true, plan: "plus" });
 }
+export async function plusStats(request, env) {
+  if (!isAuthorized(request, env)) {
+    return reply(request, { success: false, message: "Unauthorized" }, 401);
+  }
+  const price = await getPrice(env);
+  const plusRow = await env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM subscribers WHERE plan = 'plus'"
+  ).first();
+  const freeRow = await env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM subscribers WHERE plan IS NULL OR plan != 'plus'"
+  ).first();
+  const buyers = await env.DB.prepare(
+    "SELECT email, subscribedAt, active FROM subscribers WHERE plan = 'plus' ORDER BY id DESC"
+  ).all();
+  const plusCount = plusRow?.n || 0;
+  return reply(request, {
+    success: true,
+    price,
+    plusCount,
+    freeCount: freeRow?.n || 0,
+    estimatedRevenue: plusCount * price,
+    buyers: buyers.results || [],
+  });
+}
+export async function getPlusStatus(request, env) {
+  const row = await env.DB.prepare("SELECT value FROM settings WHERE key = 'plus_enabled'").first();
+  return reply(request, { success: true, enabled: row?.value === "1", price: await getPrice(env) });
+}
+
+export async function setPlusStatus(request, env) {
+  if (!isAuthorized(request, env)) {
+    return reply(request, { success: false, message: "Unauthorized" }, 401);
+  }
+  const body = await request.json().catch(() => ({}));
+  const enabled = body.enabled === true;
+  await env.DB.prepare(
+    "INSERT INTO settings (key, value) VALUES ('plus_enabled', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
+  ).bind(enabled ? "1" : "0").run();
+  return reply(request, { success: true, enabled });
+}

@@ -236,6 +236,13 @@ tr:hover td{background:rgba(91,79,233,.03)}
     <div class="content">
 
       <div class="panel active" id="panel-dashboard">
+                <div class="editor-card" style="margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+          <div>
+            <h3 style="margin-bottom:.25rem">Plus Button</h3>
+            <div class="seo-help" id="plusStatusText">Checking…</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="plusToggleBtn" onclick="togglePlus()">Loading…</button>
+        </div>
         <div class="stats-row" id="dashStats"></div>
         <div class="section-hdr">
           <h2>Recent Messages</h2>
@@ -540,6 +547,7 @@ async function initApp() {
   await Promise.all([fetchAllPosts(), fetchContacts()]);
   updateUnreadBadge();
   renderDashboard();
+  loadPlusStatus();
 }
 
 function updateUnreadBadge() {
@@ -1006,7 +1014,46 @@ function fmtDate(iso) {
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) + ', ' +
          d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
 }
+let plusEnabled = false;
 
+async function loadPlusStatus() {
+  try {
+    const res = await authFetch(`${API}/api/plus/status`);
+    const d = await res.json();
+    plusEnabled = !!d.enabled;
+    renderPlusStatus();
+  } catch {
+    document.getElementById('plusStatusText').textContent = 'Could not load status.';
+  }
+}
+
+function renderPlusStatus() {
+  document.getElementById('plusStatusText').textContent =
+    plusEnabled ? 'Plus is visible on the site.' : 'Plus is hidden from the site.';
+  document.getElementById('plusToggleBtn').textContent = plusEnabled ? 'Hide Plus' : 'Show Plus';
+}
+
+async function togglePlus() {
+  const next = !plusEnabled;
+  if (next && !confirm('Show the Plus button on the live site? Only do this once Razorpay is in Live mode.')) return;
+  try {
+    const res = await authFetch(`${API}/api/plus/enabled`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: next }),
+    });
+    const d = await res.json();
+    if (d.success) {
+      plusEnabled = d.enabled;
+      renderPlusStatus();
+      showToastA(plusEnabled ? 'Plus is now visible.' : 'Plus is now hidden.', 'success');
+    } else {
+      showToastA(d.message || 'Could not update Plus.', 'error');
+    }
+  } catch {
+    showToastA('Cannot reach server.', 'error');
+  }
+}
 function escHtml(str) {
   return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }

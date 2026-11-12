@@ -169,6 +169,7 @@ footer{background:var(--ink);color:#fff;padding:4rem clamp(1rem,5vw,4rem) 2rem;p
 .plus-btn{background:linear-gradient(135deg,#F5C451,#E9A23B)!important;color:#1a1200!important;box-shadow:0 0 0 1px rgba(255,255,255,.35),0 8px 24px rgba(245,196,81,.45)}
 .plus-btn:hover{transform:scale(1.04)}
 .plus-note{color:rgba(255,255,255,.7);font-size:.8rem;margin-top:1rem;position:relative;z-index:1}
+body:not(.plus-on) .newsletter{display:none}
 
 .blog-header{padding:4rem clamp(1rem,5vw,4rem) 2rem;max-width:1200px;margin:0 auto}
 .blog-header h1{font-family:var(--ff-display);font-size:clamp(2.5rem,5vw,4rem);font-weight:800;letter-spacing:-0.04em;margin-bottom:.5rem}
@@ -1068,6 +1069,10 @@ function escapeHtml(str) {
 }
 
 /* ====== INIT ====== */
+fetch(`${API}/api/plus/status`, { cache: 'no-store' })
+  .then(r => r.json())
+  .then(d => { if (d.success && d.enabled) document.body.classList.add('plus-on'); })
+  .catch(() => {});
 fetch(`${API}/api/visit`, { method: 'POST' }).catch(() => {});
 
 const initialPage = location.hash.replace('#', '') || 'home';
