@@ -817,16 +817,39 @@ function openPost(id) {
         <div style="color:var(--muted);font-size:.875rem">Share it with someone who'd find it interesting.</div>
       </div>
       <div style="display:flex;gap:.75rem">
+        <button class="btn-primary" onclick="shareBlog()">↗ Share Blog</button>
         <button class="btn-outline" onclick="copyLink()">📋 Copy Link</button>
         <button class="btn-primary" onclick="navigate('blog')">More Articles</button>
       </div>
     </div>`;
 
   navigate('post');
+  history.replaceState(null, '', `#post-${post.id}`);
 }
 
-function copyLink() {
-  navigator.clipboard?.writeText(window.location.href).catch(() => {});
+async function shareBlog() {
+  const post = POSTS.find(p => p.id === Number(location.hash.replace('#post-', '')));
+  const title = post?.title || document.querySelector('.single-post-header h1')?.textContent || 'Nishu Blogs';
+  const shareData = { title, text: `Read "${title}" on Nishu Blogs`, url: window.location.href };
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+      return;
+    }
+    await navigator.clipboard.writeText(window.location.href);
+    showToast('Blog link copied. Share it anywhere!', 'success');
+  } catch (error) {
+    if (error?.name !== 'AbortError') showToast('Unable to share this blog right now.', 'error');
+  }
+}
+
+async function copyLink() {
+  try {
+    await navigator.clipboard.writeText(window.location.href);
+  } catch {
+    showToast('Unable to copy the link right now.', 'error');
+    return;
+  }
   showToast('Link copied to clipboard!', 'success');
 }
 
