@@ -11,7 +11,12 @@ CREATE TABLE IF NOT EXISTS posts (
   featured INTEGER DEFAULT 0,
   published INTEGER DEFAULT 1,
   views INTEGER DEFAULT 0,
-  postDate TEXT DEFAULT (date('now'))
+  postDate TEXT DEFAULT (date('now')),
+  seoTitle TEXT DEFAULT '',
+  slug TEXT DEFAULT '',
+  metaDescription TEXT DEFAULT '',
+  keyword TEXT DEFAULT '',
+  labels TEXT DEFAULT ''
 );
 
 CREATE TABLE IF NOT EXISTS contacts (

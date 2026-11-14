@@ -65,6 +65,15 @@ function markdownToHtml(md) {
     .join("\n");
 }
 
+function slugify(value) {
+  return String(value || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 120);
+}
+
 const COVER_IMAGE_FALLBACKS = {
   Technology: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80",
   Design: "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=1200&q=80",
@@ -153,6 +162,7 @@ Rules:
 - Use clear H2 and H3 headings.
 - No title inside contentMarkdown.
 - Use natural English and make it SEO-friendly without keyword stuffing.
+- Create complete SEO metadata for the article.
 
 Pick the category that best fits the topic you chose. Use only the allowed categories, and choose the most specific one. Do not default to the first one.
 
@@ -165,7 +175,12 @@ Use only straight double quotes. Do not put line breaks inside string values; wr
   "category": "one of the allowed categories, copied exactly",
   "emoji": "one emoji",
   "readTime": "6 min",
-  "contentMarkdown": "Full article in markdown"
+  "contentMarkdown": "Full article in markdown",
+  "seoTitle": "SEO title, 50-60 characters",
+  "slug": "short-url-slug",
+  "metaDescription": "SEO meta description, 140-160 characters",
+  "keyword": "one primary search keyword",
+  "labels": "3-5 related keywords separated by commas"
 }
 
 Allowed categories: ${categories.join(", ")}
@@ -179,19 +194,29 @@ Allowed categories: ${categories.join(", ")}
   article.title = fixMojibake(article.title);
   article.excerpt = fixMojibake(article.excerpt);
   article.contentMarkdown = fixMojibake(article.contentMarkdown);
+  article.seoTitle = fixMojibake(article.seoTitle || article.title);
+  article.slug = fixMojibake(article.slug || "");
+  article.metaDescription = fixMojibake(article.metaDescription || article.excerpt);
+  article.keyword = fixMojibake(article.keyword || article.title);
+  article.labels = fixMojibake(article.labels || article.keyword);
 
   if (!article.title || !article.excerpt || !article.contentMarkdown) {
     throw new Error("AI returned an incomplete article.");
   }
-
+  article.seoTitle = String(article.seoTitle || article.title).trim().slice(0, 60);
+  article.slug = slugify(article.slug || article.seoTitle || article.title);
+  article.metaDescription = String(article.metaDescription || article.excerpt).trim().slice(0, 160);
+  article.keyword = String(article.keyword || article.title).trim().slice(0, 120);
+  article.labels = String(article.labels || article.keyword).trim().slice(0, 255);
   const wanted = String(article.category || "").trim().toLowerCase();
   const matched = categories.find(c => c.toLowerCase() === wanted);
   article.category = matched || (env.DEFAULT_CATEGORY || categories[0]);
   const coverImage = await findCoverImage(article.title, article.category, usedImages) || fallbackCoverImage(article.category);
 
   await env.DB.prepare(
-    `INSERT INTO posts (title, excerpt, body, author, readTime, category, emoji, coverImage, featured, published)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 1)`
+    `INSERT INTO posts (title, excerpt, body, author, readTime, category, emoji, coverImage, featured, published,
+       seoTitle, slug, metaDescription, keyword, labels)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?)`
   ).bind(
     article.title,
     article.excerpt,
@@ -200,7 +225,12 @@ Allowed categories: ${categories.join(", ")}
     article.readTime || "6 min",
     article.category,
     article.emoji || "📝",
-    coverImage
+    coverImage,
+    article.seoTitle,
+    article.slug,
+    article.metaDescription,
+    article.keyword,
+    article.labels
   ).run();
 
   return article.title;
