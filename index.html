@@ -650,6 +650,7 @@ async function updateStats() {
 }
 
 async function loadPosts() {
+  let lastError;
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
       const res = await fetch(`${API}/api/posts`, { cache: 'no-store' });
@@ -659,11 +660,20 @@ async function loadPosts() {
         POSTS = data.data;
         return;
       }
+      throw new Error(data.message || 'The posts response was empty.');
     } catch (err) {
+      lastError = err;
       console.warn(`Posts request failed (attempt ${attempt})`, err);
     }
     await new Promise(r => setTimeout(r, 1000 * attempt));
   }
+  const containers = [document.getElementById('featuredPosts'), document.getElementById('allPosts')];
+  containers.forEach(container => {
+    if (container) {
+      container.innerHTML = '<p style="color:var(--muted);text-align:center;padding:3rem;grid-column:1/-1">Articles are temporarily unavailable. Please try again shortly.</p>';
+    }
+  });
+  throw lastError || new Error('Failed to load posts.');
 }
 
 function buildCategoryUI() {
@@ -707,16 +717,18 @@ function navigate(page) {
 
 /* ====== RENDER POSTS ====== */
 function coverStyle(post) {
-  return post.coverImage
-    ? `background-image:url('${post.coverImage}');background-size:cover;background-position:center`
+  const coverImage = typeof post.coverImage === 'string' ? post.coverImage.trim() : '';
+  return coverImage
+    ? `background-image:url('${coverImage.replace(/'/g, '%27')}');background-size:cover;background-position:center`
     : '';
 }
 
 function createPostCard(post, featured = false) {
   const el = document.createElement('div');
   el.className = 'post-card tilt-card' + (featured ? ' featured' : '');
+  const coverImage = typeof post.coverImage === 'string' ? post.coverImage.trim() : '';
   el.innerHTML = `
-    <div class="post-card-img" style="${coverStyle(post)}"><span>${post.coverImage ? '' : escapeHtml(post.emoji || '')}</span></div>
+    <div class="post-card-img" style="${coverStyle(post)}"><span>${coverImage ? '' : escapeHtml(post.emoji || '')}</span></div>
     <div class="tilt-shine"></div>
     <div class="post-card-body">
       <div class="post-tag">${escapeHtml(post.category)}</div>
@@ -727,7 +739,7 @@ function createPostCard(post, featured = false) {
           <div class="avatar">${escapeHtml((post.author || 'NB').split(' ').map(n => n[0]).join(''))}</div>
           <span>${escapeHtml(post.author)}</span>
         </div>
-        <span>${escapeHtml(post.readTime)} · ${escapeHtml(post.date)}</span>
+        <span>${escapeHtml(post.readTime || '5 min')} · ${escapeHtml(post.date || '')}</span>
       </div>
     </div>`;
   el.addEventListener('click', () => openPost(post.id));
@@ -780,6 +792,7 @@ function openPost(id) {
   fetch(`${API}/api/posts/${id}/view`, { method: 'POST' }).catch(() => {});
 
   const container = document.getElementById('singlePostContent');
+  const coverImage = typeof post.coverImage === 'string' ? post.coverImage.trim() : '';
   container.innerHTML = `
     <div class="back-btn" onclick="navigate('blog')">← Back to articles</div>
     <div class="single-post-header">
@@ -790,12 +803,12 @@ function openPost(id) {
           <div class="avatar">${escapeHtml((post.author || 'NB').split(' ').map(n => n[0]).join(''))}</div>
           <span>${escapeHtml(post.author)}</span>
         </div>
-        <span>📅 ${escapeHtml(post.date)}</span>
-        <span>⏱ ${escapeHtml(post.readTime)} read</span>
+        <span>📅 ${escapeHtml(post.date || '')}</span>
+        <span>⏱ ${escapeHtml(post.readTime || '5 min')} read</span>
       </div>
     </div>
-    <div class="single-post-cover" style="${coverStyle(post)}"><span>${post.coverImage ? '' : escapeHtml(post.emoji || '')}</span></div>
-    <div class="post-body">${post.body}</div>
+    <div class="single-post-cover" style="${coverStyle(post)}"><span>${coverImage ? '' : escapeHtml(post.emoji || '')}</span></div>
+    <div class="post-body">${post.body || `<p>${escapeHtml(post.excerpt || '')}</p>`}</div>
     <div style="margin-top:3rem;padding-top:2rem;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap">
       <div>
         <div style="font-family:var(--ff-display);font-weight:700;margin-bottom:.25rem">Enjoyed this read?</div>
@@ -1088,7 +1101,7 @@ loadPosts().then(() => {
   renderAllPosts();
   const match = initialPage.match(/^post-(\d+)$/);
   if (match) openPost(Number(match[1]));
-});
+}).catch(() => {});
 
 setTimeout(triggerReveal, 500);
 

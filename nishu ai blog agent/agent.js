@@ -65,6 +65,38 @@ function markdownToHtml(md) {
     .join("\n");
 }
 
+const COVER_IMAGE_FALLBACKS = {
+  Technology: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1200&q=80",
+  Design: "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=1200&q=80",
+  Culture: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=1200&q=80",
+  Science: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=1200&q=80",
+  Life: "https://images.unsplash.com/photo-1500534623283-312aede485b7?auto=format&fit=crop&w=1200&q=80",
+  Business: "https://images.unsplash.com/photo-1556761175-b413da4baf72?auto=format&fit=crop&w=1200&q=80",
+  Entertainment: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1200&q=80",
+};
+
+async function findCoverImage(title, category, usedImages = new Set()) {
+  const query = encodeURIComponent(`${title} ${category}`);
+  const endpoint = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${query}&gsrnamespace=6&gsrlimit=10&prop=imageinfo&iiprop=url&iiurlwidth=1200&format=json&origin=*`;
+  try {
+    const response = await fetch(endpoint, { headers: { "User-Agent": "NishuBlogs/1.0" } });
+    if (!response.ok) throw new Error(`Wikimedia image search failed: HTTP ${response.status}`);
+    const data = await response.json();
+    const pages = Object.values(data.query?.pages || {});
+    const image = pages
+      .map(page => page.imageinfo?.[0]?.thumburl || page.imageinfo?.[0]?.url || "")
+      .find(url => url && !usedImages.has(url));
+    return image || "";
+  } catch (error) {
+    console.warn(`Cover image search failed: ${error.message}`);
+    return "";
+  }
+}
+
+function fallbackCoverImage(category) {
+  return COVER_IMAGE_FALLBACKS[category] || COVER_IMAGE_FALLBACKS.Technology;
+}
+
 async function callModel(env, model, prompt) {
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -96,6 +128,10 @@ async function generateAndSave(env, model) {
     .prepare("SELECT title FROM posts ORDER BY id DESC LIMIT 30")
     .all();
   const previousTopics = results.map((r, i) => `${i + 1}. ${r.title}`).join("\n") || "(none)";
+  const existingCovers = await env.DB
+    .prepare("SELECT coverImage FROM posts WHERE coverImage IS NOT NULL AND trim(coverImage) != ''")
+    .all();
+  const usedImages = new Set(existingCovers.results.map(row => row.coverImage));
 
   const prompt = `
 You are the editorial AI for Bolgerr .
@@ -145,6 +181,7 @@ Allowed categories: ${categories.join(", ")}
   }
   const matched = categories.find(c => c.toLowerCase() === String(article.category || "").trim().toLowerCase());
   article.category = matched || (env.DEFAULT_CATEGORY || categories[0]);
+  const coverImage = await findCoverImage(article.title, article.category, usedImages) || fallbackCoverImage(article.category);
 
   await env.DB.prepare(
     `INSERT INTO posts (title, excerpt, body, author, readTime, category, emoji, coverImage, featured, published)
@@ -157,7 +194,7 @@ Allowed categories: ${categories.join(", ")}
     article.readTime || "6 min",
     article.category,
     article.emoji || "📝",
-    ""
+    coverImage
   ).run();
 
   return article.title;

@@ -95,8 +95,8 @@ npm start
 
 For a real 24/7 daily agent, do not rely on your Mac being awake. Deploy this folder to a server/hosting service that supports a long-running Node.js process or use a scheduled job.
 
-## Important
+## Cover images
 
-The first version intentionally does NOT auto-generate a cover image. Get text publishing working first. Image automation can be added after the publisher is confirmed.
+Every published article gets a topic-relevant cover image from Wikimedia Commons. If no matching image is found, the agent uses a category-specific fallback image. The emoji remains article metadata only and is not used as the cover image.
 
 If the agent says "Title field not found", "article editor not found", or "Publish Post button not found", send the exact terminal error. Those are selector/integration issues and can be fixed without rebuilding the whole agent.

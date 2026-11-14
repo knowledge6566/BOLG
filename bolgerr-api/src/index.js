@@ -32,10 +32,11 @@ function json(request, data, status = 200, extraHeaders = {}) {
 }
 
 let publicPostsCache = { expiresAt: 0, data: null };
+const PUBLIC_POSTS_CACHE_KEY = "published-v5";
 
 async function invalidatePostsCache(env) {
   publicPostsCache = { expiresAt: 0, data: null };
-  if (env.POSTS_CACHE) await env.POSTS_CACHE.delete("published");
+  if (env.POSTS_CACHE) await env.POSTS_CACHE.delete(PUBLIC_POSTS_CACHE_KEY);
 }
 
 function isAuthorized(request, env) {
@@ -107,12 +108,12 @@ async function getPosts(request, env, url) {
   const wantsAll = url.searchParams.get("admin") === "true" && isAuthorized(request, env);
   const sql = wantsAll
     ? "SELECT * FROM posts ORDER BY id DESC"
-    : `SELECT id, title, excerpt, author, readTime, category, emoji,
+    : `SELECT id, title, excerpt, body, author, readTime, category, emoji, coverImage,
          featured, published, views, postDate, seoTitle, slug, metaDescription, keyword, labels
        FROM posts WHERE published = 1 ORDER BY id DESC`;
   let data;
   if (!wantsAll && env.POSTS_CACHE) {
-    data = await env.POSTS_CACHE.get("published", "json");
+    data = await env.POSTS_CACHE.get(PUBLIC_POSTS_CACHE_KEY, "json");
   }
   if (!wantsAll && !data && publicPostsCache.expiresAt > Date.now()) {
     data = publicPostsCache.data;
@@ -123,7 +124,7 @@ async function getPosts(request, env, url) {
       if (!wantsAll) {
         publicPostsCache = { expiresAt: Date.now() + 30_000, data };
         if (env.POSTS_CACHE) {
-          await env.POSTS_CACHE.put("published", JSON.stringify(data), { expirationTtl: 300 });
+          await env.POSTS_CACHE.put(PUBLIC_POSTS_CACHE_KEY, JSON.stringify(data), { expirationTtl: 300 });
         }
       }
     }
