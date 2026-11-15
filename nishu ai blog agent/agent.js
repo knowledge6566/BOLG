@@ -43,6 +43,7 @@ function parseJson(text) {
 
 function markdownToHtml(md) {
   let s = md.trim()
+    .replace(/\\n/g, "\n")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");

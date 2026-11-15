@@ -43,6 +43,7 @@ function parseJson(text) {
 
 function markdownToHtml(md) {
   let s = md.trim()
+    .replace(/\\n/g, "\n")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
@@ -128,10 +129,44 @@ async function callModel(env, model, prompt) {
   return text;
 }
 
+function decodeXml(value) {
+  return value
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
+async function getTrendingTopics(env) {
+  const regions = String(env.TREND_REGIONS || "US,IN,GB,CA,AU")
+    .split(",")
+    .map(region => region.trim().toUpperCase())
+    .filter(Boolean);
+
+  const feeds = await Promise.all(regions.map(async region => {
+    const response = await fetch(`https://trends.google.com/trending/rss?geo=${encodeURIComponent(region)}`);
+    if (!response.ok) throw new Error(`Google Trends returned HTTP ${response.status} for ${region}`);
+    const xml = await response.text();
+    return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 10).map(match => {
+      const item = match[1];
+      const title = item.match(/<title>([\s\S]*?)<\/title>/)?.[1];
+      const traffic = item.match(/<ht:approx_traffic>([\s\S]*?)<\/ht:approx_traffic>/)?.[1] || "";
+      return title ? { title: decodeXml(title).trim(), traffic: decodeXml(traffic).trim(), region } : null;
+    }).filter(Boolean);
+  }));
+
+  const topics = feeds.flat();
+  if (!topics.length) throw new Error("Google Trends returned no topics.");
+  return topics;
+}
+
 async function generateAndSave(env, model) {
   const categories = (env.BLOG_CATEGORIES || "Technology").split(",").map(s => s.trim()).filter(Boolean);
   const words = Number(env.ARTICLE_WORDS || 1200);
   const focus = env.TOPIC_FOCUS || "technology, AI, web development, software, design, internet";
+  const trendingTopics = await getTrendingTopics(env);
 
   const { results } = await env.DB
     .prepare("SELECT title FROM posts ORDER BY id DESC LIMIT 30")
@@ -146,6 +181,11 @@ async function generateAndSave(env, model) {
 You are the editorial AI for Nishu Blogs.
 
 Choose ONE useful, original topic for today's blog article.
+
+Current Google Trends topics:
+${trendingTopics.map((topic, index) => `${index + 1}. ${topic.title} (${topic.region}, ${topic.traffic || "traffic unavailable"})`).join("\n")}
+
+Choose the strongest relevant topic from this list. If the top search is not suitable for a blog, choose the next relevant topic. Do not copy news articles or make unsupported claims; provide useful context and explain what readers should know.
 
 Main focus:
 ${focus}
@@ -216,7 +256,7 @@ Allowed categories: ${categories.join(", ")}
   await env.DB.prepare(
     `INSERT INTO posts (title, excerpt, body, author, readTime, category, emoji, coverImage, featured, published,
        seoTitle, slug, metaDescription, keyword, labels)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?)`
   ).bind(
     article.title,
     article.excerpt,
@@ -236,7 +276,7 @@ Allowed categories: ${categories.join(", ")}
   return article.title;
 }
 
-export async function publishDailyArticle(env) {
+export async function generateDailyDraft(env) {
   const models = (env.OPENROUTER_MODELS || "openrouter/free")
     .split(",")
     .map(s => s.trim())

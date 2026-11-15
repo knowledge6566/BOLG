@@ -1,4 +1,4 @@
-import { publishDailyArticle, fixMojibake } from "./agent.js";
+import { generateDailyDraft, fixMojibake } from "./agent.js";
 import {
   isValidEmail,
   addSubscriber,
@@ -76,6 +76,12 @@ function postValues(p) {
   ];
 }
 
+async function generateDraft(env) {
+  const title = await generateDailyDraft(env);
+  await invalidatePostsCache(env);
+  return title;
+}
+
 async function safeNotify(env, post) {
   try {
     const result = await notifySubscribers(env, post);
@@ -83,16 +89,6 @@ async function safeNotify(env, post) {
   } catch (err) {
     console.error("Newsletter failed:", err.message);
   }
-}
-
-async function publishAndNotify(env) {
-  const title = await publishDailyArticle(env);
-  await invalidatePostsCache(env);
-  const post = await env.DB.prepare(
-    "SELECT * FROM posts WHERE published = 1 ORDER BY id DESC LIMIT 1"
-  ).first();
-  if (post) await safeNotify(env, post);
-  return title;
 }
 
 async function adminLogin(request, env) {
@@ -282,7 +278,7 @@ async function fixOldPosts(request, env) {
 
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(publishAndNotify(env));
+    ctx.waitUntil(generateDraft(env));
   },
 
   async fetch(request, env) {
@@ -341,8 +337,8 @@ export default {
       if (pathname === "/api/plus/enabled" && method === "PUT") return await setPlusStatus(request, env);
 
       if (pathname === "/api/agent/run" && method === "POST") {
-        const title = await publishAndNotify(env);
-        return json(request, { success: true, title }, 201);
+        const title = await generateDraft(env);
+        return json(request, { success: true, title, published: false }, 201);
       }
 
       return json(request, { success: false, message: "Not found" }, 404);
