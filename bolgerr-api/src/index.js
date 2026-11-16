@@ -1,4 +1,4 @@
-import { generateDailyDraft, fixMojibake } from "./agent.js";
+import { publishDailyArticle, fixMojibake } from "./agent.js";
 import {
   isValidEmail,
   addSubscriber,
@@ -76,9 +76,15 @@ function postValues(p) {
   ];
 }
 
-async function generateDraft(env) {
-  const title = await generateDailyDraft(env);
+async function publishArticle(env, options = {}) {
+  const title = await publishDailyArticle(env, options);
   await invalidatePostsCache(env);
+  if (options.type !== "trending") {
+    const post = await env.DB.prepare(
+      "SELECT * FROM posts WHERE published = 1 ORDER BY id DESC LIMIT 1"
+    ).first();
+    if (post) await safeNotify(env, post);
+  }
   return title;
 }
 
@@ -278,7 +284,14 @@ async function fixOldPosts(request, env) {
 
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(generateDraft(env));
+    const categories = (env.BLOG_CATEGORIES || "Technology").split(",").map(s => s.trim()).filter(Boolean);
+    const dayNumber = Math.floor(Date.now() / 86400000);
+    const categorySlot = event.cron === "30 10 * * *" ? 1 : 0;
+    const category = categories[(dayNumber * 2 + categorySlot) % categories.length];
+    const options = event.cron === "30 4 * * *"
+      ? { type: "trending" }
+      : { type: "category", category };
+    ctx.waitUntil(publishArticle(env, options));
   },
 
   async fetch(request, env) {
@@ -337,8 +350,8 @@ export default {
       if (pathname === "/api/plus/enabled" && method === "PUT") return await setPlusStatus(request, env);
 
       if (pathname === "/api/agent/run" && method === "POST") {
-        const title = await generateDraft(env);
-        return json(request, { success: true, title, published: false }, 201);
+        const title = await publishArticle(env, { type: "trending" });
+        return json(request, { success: true, title, published: false, draft: true }, 201);
       }
 
       return json(request, { success: false, message: "Not found" }, 404);

@@ -16,7 +16,7 @@
     }
   ],
   "triggers": {
-    "crons": ["30 4 * * *"]
+    "crons": ["30 4 * * *", "30 10 * * *", "30 16 * * *"]
   },
   "vars": {
         "RAZORPAY_KEY_ID": "rzp_test_TzAK4NHMZF7isr",

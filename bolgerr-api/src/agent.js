@@ -146,15 +146,20 @@ async function getTrendingTopics(env) {
     .filter(Boolean);
 
   const feeds = await Promise.all(regions.map(async region => {
-    const response = await fetch(`https://trends.google.com/trending/rss?geo=${encodeURIComponent(region)}`);
-    if (!response.ok) throw new Error(`Google Trends returned HTTP ${response.status} for ${region}`);
-    const xml = await response.text();
-    return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 10).map(match => {
-      const item = match[1];
-      const title = item.match(/<title>([\s\S]*?)<\/title>/)?.[1];
-      const traffic = item.match(/<ht:approx_traffic>([\s\S]*?)<\/ht:approx_traffic>/)?.[1] || "";
-      return title ? { title: decodeXml(title).trim(), traffic: decodeXml(traffic).trim(), region } : null;
-    }).filter(Boolean);
+    try {
+      const response = await fetch(`https://trends.google.com/trending/rss?geo=${encodeURIComponent(region)}`);
+      if (!response.ok) throw new Error(`Google Trends returned HTTP ${response.status} for ${region}`);
+      const xml = await response.text();
+      return [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)].slice(0, 10).map(match => {
+        const item = match[1];
+        const title = item.match(/<title>([\s\S]*?)<\/title>/)?.[1];
+        const traffic = item.match(/<ht:approx_traffic>([\s\S]*?)<\/ht:approx_traffic>/)?.[1] || "";
+        return title ? { title: decodeXml(title).trim(), traffic: decodeXml(traffic).trim(), region } : null;
+      }).filter(Boolean);
+    } catch (error) {
+      console.error(`Google Trends failed for ${region}: ${error.message}`);
+      return [];
+    }
   }));
 
   const topics = feeds.flat();
@@ -162,11 +167,13 @@ async function getTrendingTopics(env) {
   return topics;
 }
 
-async function generateAndSave(env, model) {
+async function generateAndSave(env, model, options = {}) {
   const categories = (env.BLOG_CATEGORIES || "Technology").split(",").map(s => s.trim()).filter(Boolean);
   const words = Number(env.ARTICLE_WORDS || 1200);
   const focus = env.TOPIC_FOCUS || "technology, AI, web development, software, design, internet";
-  const trendingTopics = await getTrendingTopics(env);
+  const trending = options.type === "trending";
+  const category = options.category || categories[0];
+  const trendingTopics = trending ? await getTrendingTopics(env) : [];
 
   const { results } = await env.DB
     .prepare("SELECT title FROM posts ORDER BY id DESC LIMIT 30")
@@ -182,10 +189,12 @@ You are the editorial AI for Nishu Blogs.
 
 Choose ONE useful, original topic for today's blog article.
 
+${trending ? `This is the trending article. Choose the strongest suitable topic from these current Google Trends topics:
+
 Current Google Trends topics:
 ${trendingTopics.map((topic, index) => `${index + 1}. ${topic.title} (${topic.region}, ${topic.traffic || "traffic unavailable"})`).join("\n")}
 
-Choose the strongest relevant topic from this list. If the top search is not suitable for a blog, choose the next relevant topic. Do not copy news articles or make unsupported claims; provide useful context and explain what readers should know.
+Choose the strongest relevant topic from this list. If the top search is not suitable for a blog, choose the next relevant topic. Do not copy news articles or make unsupported claims; provide useful context and explain what readers should know.` : `This is a category-focused article. The article must be about ${category} and its category must be exactly "${category}".`}
 
 Main focus:
 ${focus}
@@ -250,13 +259,15 @@ Allowed categories: ${categories.join(", ")}
   article.labels = String(article.labels || article.keyword).trim().slice(0, 255);
   const wanted = String(article.category || "").trim().toLowerCase();
   const matched = categories.find(c => c.toLowerCase() === wanted);
-  article.category = matched || (env.DEFAULT_CATEGORY || categories[0]);
+  article.category = trending
+    ? (matched || (env.DEFAULT_CATEGORY || categories[0]))
+    : category;
   const coverImage = await findCoverImage(article.title, article.category, usedImages) || fallbackCoverImage(article.category);
 
   await env.DB.prepare(
     `INSERT INTO posts (title, excerpt, body, author, readTime, category, emoji, coverImage, featured, published,
        seoTitle, slug, metaDescription, keyword, labels)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?)`
   ).bind(
     article.title,
     article.excerpt,
@@ -266,6 +277,7 @@ Allowed categories: ${categories.join(", ")}
     article.category,
     article.emoji || "📝",
     coverImage,
+    trending ? 0 : 1,
     article.seoTitle,
     article.slug,
     article.metaDescription,
@@ -276,7 +288,7 @@ Allowed categories: ${categories.join(", ")}
   return article.title;
 }
 
-export async function generateDailyDraft(env) {
+export async function publishDailyArticle(env, options = {}) {
   const models = (env.OPENROUTER_MODELS || "openrouter/free")
     .split(",")
     .map(s => s.trim())
@@ -286,7 +298,7 @@ export async function generateDailyDraft(env) {
   for (let attempt = 1; attempt <= 3; attempt++) {
     const model = models[(attempt - 1) % models.length];
     try {
-      return await generateAndSave(env, model);
+      return await generateAndSave(env, model, options);
     } catch (err) {
       lastError = err;
       console.error(`Attempt ${attempt} failed: ${err.message}`);

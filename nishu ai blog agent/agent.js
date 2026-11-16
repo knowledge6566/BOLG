@@ -253,3 +253,53 @@ export async function publishDailyArticle(env) {
   }
   throw lastError;
 }
+
+async function getAdminToken(env) {
+  const apiUrl = String(env.BLOG_API_URL || "").trim().replace(/\/+$/, "");
+  if (!apiUrl) throw new Error("BLOG_API_URL is not configured.");
+  if (!env.ADMIN_USERNAME || !env.ADMIN_PASSWORD) {
+    throw new Error("ADMIN_USERNAME and ADMIN_PASSWORD must be configured.");
+  }
+
+  const response = await fetch(`${apiUrl}/api/admin/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      username: env.ADMIN_USERNAME,
+      password: env.ADMIN_PASSWORD,
+    }),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.success || !data.token) {
+    throw new Error(`Admin login failed (HTTP ${response.status}). Check ADMIN_USERNAME and ADMIN_PASSWORD against the deployed Worker secrets.`);
+  }
+  return { apiUrl, token: data.token };
+}
+
+export async function run({ dryRun = false } = {}) {
+  const env = process.env;
+  const apiUrl = String(env.BLOG_API_URL || "").trim().replace(/\/+$/, "");
+  if (!apiUrl) throw new Error("BLOG_API_URL is not configured.");
+
+  if (dryRun) {
+    const response = await fetch(`${apiUrl}/api/posts`);
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok || !data.success || !Array.isArray(data.data)) {
+      throw new Error(`API health check failed (HTTP ${response.status}).`);
+    }
+    console.log(`AI agent API is reachable. ${data.data.length} published posts found.`);
+    return { dryRun: true, postCount: data.data.length };
+  }
+
+  const { token } = await getAdminToken(env);
+  const response = await fetch(`${apiUrl}/api/agent/run`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || !data.success || !data.title) {
+    throw new Error(`AI agent publish failed (HTTP ${response.status}).`);
+  }
+  console.log(`Published article: ${data.title}`);
+  return data;
+}
